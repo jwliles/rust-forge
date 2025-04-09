@@ -1,0 +1,21 @@
+[package]
+name = "dotforge"
+version = "0.1.0"
+edition = "2024"
+description = "A powerful symlink management tool designed as a modern alternative to GNU Stow"
+authors = ["jwl"]
+license = "MIT"
+repository = "https://github.com/jwliles/rust-dotforge"
+keywords = ["symlink", "dotfiles", "stow", "configuration"]
+categories = ["command-line-utilities", "filesystem"]
+
+[dependencies]
+tempfile = "3.8"
+assert_fs = "1.0"
+predicates = "3.0"
+clap = { version = "4.5", features = ["derive"] }
+rusqlite = { version = "0.30", features = ["bundled"] }
+
+[dev-dependencies]
+test-case = "3.2"
+assert_cmd = "2.0"
