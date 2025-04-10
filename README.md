@@ -20,6 +20,33 @@ DotForge provides comprehensive symlink management using an intuitive workflow m
 - **SQLite Backend**: Reliable state tracking with transactional safety
 - **Modular Design**: Core functionality with optional feature modules
 
+## Project Structure
+
+The codebase is organized into modules following Rust conventions:
+
+```
+src/
+├── main.rs             # Entry point and CLI definition
+├── cli/                # CLI handling
+│   ├── mod.rs          # CLI module exports
+│   └── commands.rs     # Command implementations
+├── config/             # Configuration handling
+│   └── mod.rs          # Config struct and DB connection
+├── dotfile/            # Core dotfile operations
+│   ├── mod.rs          # DotFile struct definition
+│   ├── backup.rs       # Backup functionality
+│   ├── link.rs         # Linking functionality 
+│   ├── list.rs         # Listing dotfiles
+│   └── unlink.rs       # Unlinking functionality
+├── scanner/            # Directory scanning
+│   └── mod.rs          # Scanning functionality
+├── symlink/            # Symlink operations
+│   └── mod.rs          # Cross-platform symlink creation
+└── utils/              # Utility functions
+    ├── mod.rs          # Utils module exports
+    └── path_utils.rs   # Path manipulation utilities
+```
+
 ## Use Cases
 
 DotForge excels at managing various symlink scenarios:
@@ -85,6 +112,7 @@ DotForge is under active development with the following milestones:
 
 1. **v0.1.x** - Core CLI structure and basic functionality
    - [x] Command-line interface with subcommands
+   - [x] Module structure implementation
    - [ ] Basic file operations (heat, forge, cool)
    - [ ] SQLite state tracking
 
@@ -102,6 +130,21 @@ DotForge is under active development with the following milestones:
    - [ ] Complete feature set
    - [ ] Comprehensive tests
    - [ ] Documentation
+
+## Version Policy and crates.io Releases
+
+This project follows semantic versioning (SemVer) for crates.io releases:
+
+- **Patch updates (0.1.0 → 0.1.1)**: Bug fixes and minor documentation updates
+- **Minor updates (0.1.0 → 0.2.0)**: New features that don't break compatibility
+- **Major updates (0.x.x → 1.0.0)**: Breaking changes or API redesigns
+
+### Publication Guidelines
+
+- Documentation-only changes don't require a version bump
+- The `docs` branch is used for documentation development
+- Feature development occurs on dedicated `feature/*` branches
+- Version bumps occur on the `main` branch before publication to crates.io
 
 ## Contributing
 
