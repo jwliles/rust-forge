@@ -1,0 +1,39 @@
+site_name: DotForge
+site_description: A powerful symlink management tool designed as a modern alternative to GNU Stow
+site_url: https://dotforge.readthedocs.io/
+
+repo_name: jwliles/rust-dotforge
+repo_url: https://github.com/jwliles/rust-dotforge
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.details
+
+nav:
+  - 'Home': 'index.md'
+  - 'Getting Started': 
+    - 'Installation': 'getting-started/installation.md'
+    - 'Basic Usage': 'getting-started/basic-usage.md'
+  - 'Features':
+    - 'Profiles': 'features/profiles.md'
+    - 'Interactive Mode': 'features/interactive-mode.md'
+  - 'Development': 
+    - 'Project Structure': 'development/project-structure.md'
+    - 'Contributing': 'development/contributing.md'
+  - 'API Reference': 'api-reference.md'
+  - 'Changelog': 'changelog.md'
