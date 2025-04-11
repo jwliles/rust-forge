@@ -61,29 +61,23 @@ fn main() {
 
     match &cli.command {
         Some(Commands::Heat { files }) => {
-            println!("Heating files: {:?}", files);
-            // TODO: implement heat command
+            cli::commands::heat_command(files);
         }
         Some(Commands::Forge) => {
-            println!("Forging symlinks");
-            // TODO: implement forge command
+            cli::commands::forge_command();
         }
         Some(Commands::Cool { files }) => {
-            println!("Cooling files: {:?}", files);
-            // TODO: implement cool command
+            cli::commands::cool_command(files);
         }
         Some(Commands::Profile { action }) => match action {
             ProfileActions::Create { name } => {
-                println!("Creating profile: {}", name);
-                // TODO: implement profile create
+                cli::commands::profile::create(name);
             }
             ProfileActions::List => {
-                println!("Listing profiles");
-                // TODO: implement profile list
+                cli::commands::profile::list();
             }
             ProfileActions::Switch { name } => {
-                println!("Switching to profile: {}", name);
-                // TODO: implement profile switch
+                cli::commands::profile::switch(name);
             }
         },
         None => {
