@@ -1,6 +1,6 @@
 [package]
 name = "dotforge"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "A powerful symlink management tool designed as a modern alternative to GNU Stow"
 authors = ["jwl"]

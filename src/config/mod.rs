@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Context, Result};
 use rusqlite::Connection;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
@@ -9,6 +8,8 @@ const DEFAULT_CONFIG_DIR: &str = ".dotforge";
 const DEFAULT_PATH_FILE: &str = "default_path";
 const FILETYPES_FILE: &str = "filetypes";
 const IGNORED_PATHS_FILE: &str = "ignored_paths";
+const MANAGED_FOLDERS_FILE: &str = "managed_folders";
+const DEFAULT_MANAGED_FOLDER: &str = "default";
 
 pub struct Config {
     db_path: PathBuf,
@@ -18,6 +19,7 @@ pub struct Config {
     default_path_file: PathBuf,
     filetypes_file: PathBuf,
     ignored_paths_file: PathBuf,
+    managed_folders_file: PathBuf,
 }
 
 impl Config {
@@ -37,6 +39,7 @@ impl Config {
         let default_path_file = config_dir.join(DEFAULT_PATH_FILE);
         let filetypes_file = config_dir.join(FILETYPES_FILE);
         let ignored_paths_file = config_dir.join(IGNORED_PATHS_FILE);
+        let managed_folders_file = config_dir.join(MANAGED_FOLDERS_FILE);
         
         // Initialize db_path 
         let mut db_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
@@ -59,12 +62,129 @@ impl Config {
             default_path_file,
             filetypes_file,
             ignored_paths_file,
+            managed_folders_file,
         }
     }
 
     pub fn connect(&mut self) -> rusqlite::Result<()> {
         // Connect to the database
-        self.connection = Some(Connection::open(&self.db_path)?); 
+        self.connection = Some(Connection::open(&self.db_path)?);
+        
+        // Initialize database if needed
+        self.init_database()?;
+        
+        Ok(())
+    }
+    
+    // Initialize database tables if they don't exist
+    fn init_database(&self) -> rusqlite::Result<()> {
+        if let Some(conn) = &self.connection {
+            // Create dotfiles table
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS dotfiles (
+                    id INTEGER PRIMARY KEY,
+                    source TEXT NOT NULL,
+                    target TEXT NOT NULL,
+                    profile TEXT,
+                    status TEXT NOT NULL DEFAULT 'staged',
+                    active BOOLEAN NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )",
+                [],
+            )?;
+            
+            // Create settings table
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )",
+                [],
+            )?;
+            
+            // Insert default settings if they don't exist
+            let default_path = self.read_default_path();
+            let count: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM settings WHERE key = 'default_path'",
+                [],
+                |row| row.get(0),
+            )?;
+            
+            if count == 0 {
+                conn.execute(
+                    "INSERT INTO settings (key, value) VALUES (?, ?)",
+                    ["default_path", &default_path],
+                )?;
+            }
+            
+            // Create filetypes table
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS filetypes (
+                    extension TEXT PRIMARY KEY,
+                    active BOOLEAN NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )",
+                [],
+            )?;
+            
+            // Create ignored_paths table
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS ignored_paths (
+                    path TEXT PRIMARY KEY,
+                    active BOOLEAN NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )",
+                [],
+            )?;
+            
+            // Initialize with default filetypes if table is empty
+            let count: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM filetypes",
+                [],
+                |row| row.get(0),
+            )?;
+            
+            if count == 0 {
+                let default_filetypes = [".bashrc", ".zshrc", ".vimrc", ".tmux.conf"];
+                for ext in default_filetypes.iter() {
+                    conn.execute(
+                        "INSERT INTO filetypes (extension) VALUES (?)",
+                        [ext],
+                    )?;
+                }
+            }
+            
+            // Import existing filetypes from file
+            if self.filetypes_file.exists() {
+                match self.read_lines(&self.filetypes_file) {
+                    Ok(filetypes) => {
+                        for ext in filetypes {
+                            conn.execute(
+                                "INSERT OR IGNORE INTO filetypes (extension) VALUES (?)",
+                                [&ext],
+                            )?;
+                        }
+                    }
+                    Err(e) => eprintln!("Failed to read filetypes file: {}", e),
+                }
+            }
+            
+            // Import existing ignored paths from file
+            if self.ignored_paths_file.exists() {
+                match self.read_lines(&self.ignored_paths_file) {
+                    Ok(paths) => {
+                        for path in paths {
+                            conn.execute(
+                                "INSERT OR IGNORE INTO ignored_paths (path) VALUES (?)",
+                                [&path],
+                            )?;
+                        }
+                    }
+                    Err(e) => eprintln!("Failed to read ignored paths file: {}", e),
+                }
+            }
+        }
+        
         Ok(())
     }
     
@@ -154,6 +274,70 @@ impl Config {
     // List ignored paths
     pub fn list_ignored_paths(&self) -> io::Result<()> {
         self.list_items(&self.ignored_paths_file, "Blocked Paths")
+    }
+    
+    // ---- Managed Folders operations ----
+    
+    // Get the managed folders file path
+    pub fn get_managed_folders_file(&self) -> &PathBuf {
+        &self.managed_folders_file
+    }
+    
+    // Add a managed folder
+    pub fn add_managed_folder(&self, name: &str, path: &Path) -> io::Result<()> {
+        let entry = format!("{}:{}", name, path.to_string_lossy());
+        
+        // Check if entry already exists (by name)
+        let managed_folders = self.get_managed_folders()?;
+        if managed_folders.iter().any(|(n, _)| n == name) {
+            println!("Managed folder '{}' already exists", name);
+            return Ok(());
+        }
+        
+        // Add the entry
+        self.append_to_file(&self.managed_folders_file, &entry)
+    }
+    
+    // Get managed folders (name, path)
+    pub fn get_managed_folders(&self) -> io::Result<Vec<(String, PathBuf)>> {
+        let lines = self.read_lines(&self.managed_folders_file)?;
+        let mut folders = Vec::new();
+        
+        for line in lines {
+            if let Some((name, path_str)) = line.split_once(':') {
+                folders.push((name.to_string(), PathBuf::from(path_str)));
+            }
+        }
+        
+        Ok(folders)
+    }
+    
+    // Check if a path is a managed folder
+    pub fn is_managed_folder(&self, path: &Path) -> io::Result<bool> {
+        let managed_folders = self.get_managed_folders()?;
+        Ok(managed_folders.iter().any(|(_, p)| p == path))
+    }
+    
+    // Get managed folder by name
+    pub fn get_managed_folder_by_name(&self, name: &str) -> io::Result<Option<PathBuf>> {
+        let managed_folders = self.get_managed_folders()?;
+        Ok(managed_folders.iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, p)| p.clone()))
+    }
+    
+    // Get the current active managed folder (for now, just get the default or first)
+    pub fn get_active_managed_folder(&self) -> io::Result<Option<(String, PathBuf)>> {
+        let managed_folders = self.get_managed_folders()?;
+        
+        // First look for the default managed folder
+        if let Some(default) = managed_folders.iter()
+            .find(|(name, _)| name == DEFAULT_MANAGED_FOLDER) {
+            return Ok(Some((default.0.clone(), default.1.clone())));
+        }
+        
+        // If no default, return the first one
+        Ok(managed_folders.first().map(|(n, p)| (n.clone(), p.clone())))
     }
     
     // Helper functions
@@ -249,6 +433,233 @@ impl Config {
         
         Ok(())
     }
+    
+    // ---- Database operations for dotfiles ----
+    
+    // Stage a dotfile in the database
+    pub fn stage_dotfile(&self, source: &Path, target: &Path, profile: Option<&str>) -> rusqlite::Result<()> {
+        if let Some(conn) = &self.connection {
+            let source_str = source.to_string_lossy().to_string();
+            let target_str = target.to_string_lossy().to_string();
+            
+            conn.execute(
+                "INSERT INTO dotfiles (source, target, profile, status) VALUES (?, ?, ?, 'staged')",
+                rusqlite::params![source_str, target_str, profile],
+            )?;
+            
+            Ok(())
+        } else {
+            Err(rusqlite::Error::QueryReturnedNoRows)
+        }
+    }
+    
+    // Update a dotfile status to linked
+    pub fn link_dotfile(&self, source: &Path, target: &Path) -> rusqlite::Result<()> {
+        if let Some(conn) = &self.connection {
+            let source_str = source.to_string_lossy().to_string();
+            let target_str = target.to_string_lossy().to_string();
+            
+            conn.execute(
+                "UPDATE dotfiles SET status = 'linked' WHERE source = ? AND target = ? AND active = 1",
+                rusqlite::params![source_str, target_str],
+            )?;
+            
+            Ok(())
+        } else {
+            Err(rusqlite::Error::QueryReturnedNoRows)
+        }
+    }
+    
+    // Add a dotfile directly with linked status (for legacy compatibility)
+    pub fn add_dotfile(&self, source: &Path, target: &Path, profile: Option<&str>) -> rusqlite::Result<()> {
+        if let Some(conn) = &self.connection {
+            let source_str = source.to_string_lossy().to_string();
+            let target_str = target.to_string_lossy().to_string();
+            
+            conn.execute(
+                "INSERT INTO dotfiles (source, target, profile, status) VALUES (?, ?, ?, 'linked')",
+                rusqlite::params![source_str, target_str, profile],
+            )?;
+            
+            Ok(())
+        } else {
+            Err(rusqlite::Error::QueryReturnedNoRows)
+        }
+    }
+    
+    // Get all dotfiles
+    pub fn get_dotfiles(&self, profile: Option<&str>) -> rusqlite::Result<Vec<crate::dotfile::DotFile>> {
+        let mut dotfiles = Vec::new();
+        
+        if let Some(conn) = &self.connection {
+            let query = match profile {
+                Some(_) => {
+                    "SELECT source, target, profile, status FROM dotfiles WHERE active = 1 AND profile = ?1"
+                },
+                None => {
+                    "SELECT source, target, profile, status FROM dotfiles WHERE active = 1"
+                },
+            };
+            
+            let mut stmt = conn.prepare(query)?;
+            
+            // This closure is used to extract the dotfile data from a row
+            let map_row = |row: &rusqlite::Row| -> rusqlite::Result<crate::dotfile::DotFile> {
+                let source: String = row.get(0)?;
+                let target: String = row.get(1)?;
+                let profile: Option<String> = row.get(2)?;
+                let status_str: String = row.get(3)?;
+                
+                let status = match status_str.as_str() {
+                    "staged" => crate::dotfile::DotFileStatus::Staged,
+                    "linked" => crate::dotfile::DotFileStatus::Linked,
+                    "unlinked" => crate::dotfile::DotFileStatus::Unlinked,
+                    _ => crate::dotfile::DotFileStatus::Staged,
+                };
+                
+                Ok(crate::dotfile::DotFile::with_status(
+                    PathBuf::from(source),
+                    PathBuf::from(target),
+                    profile,
+                    status,
+                ))
+            };
+            
+            let mut rows = match profile {
+                Some(p) => stmt.query_map([p], map_row)?,
+                None => stmt.query_map([], map_row)?,
+            };
+            
+            while let Some(dotfile_result) = rows.next() {
+                dotfiles.push(dotfile_result?);
+            }
+        }
+        
+        Ok(dotfiles)
+    }
+    
+    // Get staged dotfiles
+    pub fn get_staged_dotfiles(&self, profile: Option<&str>) -> rusqlite::Result<Vec<crate::dotfile::DotFile>> {
+        let mut dotfiles = Vec::new();
+        
+        if let Some(conn) = &self.connection {
+            let query = match profile {
+                Some(_) => {
+                    "SELECT source, target, profile, status FROM dotfiles WHERE status = 'staged' AND active = 1 AND profile = ?1"
+                },
+                None => {
+                    "SELECT source, target, profile, status FROM dotfiles WHERE status = 'staged' AND active = 1"
+                },
+            };
+            
+            let mut stmt = conn.prepare(query)?;
+            
+            // This closure is used to extract the dotfile data from a row
+            let map_row = |row: &rusqlite::Row| -> rusqlite::Result<crate::dotfile::DotFile> {
+                let source: String = row.get(0)?;
+                let target: String = row.get(1)?;
+                let profile: Option<String> = row.get(2)?;
+                let status_str: String = row.get(3)?;
+                
+                let status = match status_str.as_str() {
+                    "staged" => crate::dotfile::DotFileStatus::Staged,
+                    "linked" => crate::dotfile::DotFileStatus::Linked,
+                    "unlinked" => crate::dotfile::DotFileStatus::Unlinked,
+                    _ => crate::dotfile::DotFileStatus::Staged,
+                };
+                
+                Ok(crate::dotfile::DotFile::with_status(
+                    PathBuf::from(source),
+                    PathBuf::from(target),
+                    profile,
+                    status,
+                ))
+            };
+            
+            let mut rows = match profile {
+                Some(p) => stmt.query_map([p], map_row)?,
+                None => stmt.query_map([], map_row)?,
+            };
+            
+            while let Some(dotfile_result) = rows.next() {
+                dotfiles.push(dotfile_result?);
+            }
+        }
+        
+        Ok(dotfiles)
+    }
+    
+    // Deactivate (mark as inactive) a dotfile by target path
+    pub fn deactivate_dotfile(&self, target: &Path) -> rusqlite::Result<bool> {
+        if let Some(conn) = &self.connection {
+            let target_str = target.to_string_lossy().to_string();
+            
+            let affected = conn.execute(
+                "UPDATE dotfiles SET active = 0 WHERE target = ?",
+                [target_str],
+            )?;
+            
+            Ok(affected > 0)
+        } else {
+            Ok(false)
+        }
+    }
+    
+    // Completely remove a dotfile from the database
+    pub fn remove_dotfile(&self, target: &Path) -> rusqlite::Result<bool> {
+        if let Some(conn) = &self.connection {
+            let target_str = target.to_string_lossy().to_string();
+            
+            let affected = conn.execute(
+                "DELETE FROM dotfiles WHERE target = ?",
+                [target_str],
+            )?;
+            
+            Ok(affected > 0)
+        } else {
+            Ok(false)
+        }
+    }
+    
+    // Find a dotfile by target path
+    pub fn find_dotfile_by_target(&self, target: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+        if let Some(conn) = &self.connection {
+            let target_str = target.to_string_lossy().to_string();
+            
+            let result = conn.query_row(
+                "SELECT source, target, profile, status FROM dotfiles WHERE target = ? AND active = 1",
+                [target_str],
+                |row| {
+                    let source: String = row.get(0)?;
+                    let target: String = row.get(1)?;
+                    let profile: Option<String> = row.get(2)?;
+                    let status_str: String = row.get(3)?;
+                    
+                    let status = match status_str.as_str() {
+                        "staged" => crate::dotfile::DotFileStatus::Staged,
+                        "linked" => crate::dotfile::DotFileStatus::Linked,
+                        "unlinked" => crate::dotfile::DotFileStatus::Unlinked,
+                        _ => crate::dotfile::DotFileStatus::Staged,
+                    };
+                    
+                    Ok(crate::dotfile::DotFile::with_status(
+                        PathBuf::from(source),
+                        PathBuf::from(target),
+                        profile,
+                        status,
+                    ))
+                },
+            );
+            
+            match result {
+                Ok(dotfile) => Ok(Some(dotfile)),
+                Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+                Err(e) => Err(e),
+            }
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 // Static helper functions to use when a Config instance is not available
@@ -306,4 +717,88 @@ pub fn remove_ignored_paths(paths: &[String]) -> io::Result<()> {
 // List ignored paths
 pub fn list_ignored_paths() -> io::Result<()> {
     get_config().list_ignored_paths()
+}
+
+// ---- Managed Folders operations ----
+
+// Add a managed folder
+pub fn add_managed_folder(name: &str, path: &Path) -> io::Result<()> {
+    get_config().add_managed_folder(name, path)
+}
+
+// Get managed folders
+pub fn get_managed_folders() -> io::Result<Vec<(String, PathBuf)>> {
+    get_config().get_managed_folders()
+}
+
+// Check if path is a managed folder
+pub fn is_managed_folder(path: &Path) -> io::Result<bool> {
+    get_config().is_managed_folder(path)
+}
+
+// Get managed folder by name
+pub fn get_managed_folder_by_name(name: &str) -> io::Result<Option<PathBuf>> {
+    get_config().get_managed_folder_by_name(name)
+}
+
+// Get the current active managed folder
+pub fn get_active_managed_folder() -> io::Result<Option<(String, PathBuf)>> {
+    get_config().get_active_managed_folder()
+}
+
+// ---- Database operations for dotfiles ----
+
+// Get a database connection
+pub fn get_db_connection() -> rusqlite::Result<Config> {
+    let mut config = get_config();
+    config.connect()?;
+    Ok(config)
+}
+
+// Stage a dotfile
+pub fn stage_dotfile(source: &Path, target: &Path, profile: Option<&str>) -> rusqlite::Result<()> {
+    let config = get_db_connection()?;
+    config.stage_dotfile(source, target, profile)
+}
+
+// Link a dotfile
+pub fn link_dotfile(source: &Path, target: &Path) -> rusqlite::Result<()> {
+    let config = get_db_connection()?;
+    config.link_dotfile(source, target)
+}
+
+// Add a dotfile directly (legacy method)
+pub fn add_dotfile(source: &Path, target: &Path, profile: Option<&str>) -> rusqlite::Result<()> {
+    let config = get_db_connection()?;
+    config.add_dotfile(source, target, profile)
+}
+
+// Get all dotfiles
+pub fn get_dotfiles(profile: Option<&str>) -> rusqlite::Result<Vec<crate::dotfile::DotFile>> {
+    let config = get_db_connection()?;
+    config.get_dotfiles(profile)
+}
+
+// Get staged dotfiles
+pub fn get_staged_dotfiles(profile: Option<&str>) -> rusqlite::Result<Vec<crate::dotfile::DotFile>> {
+    let config = get_db_connection()?;
+    config.get_staged_dotfiles(profile)
+}
+
+// Deactivate a dotfile
+pub fn deactivate_dotfile(target: &Path) -> rusqlite::Result<bool> {
+    let config = get_db_connection()?;
+    config.deactivate_dotfile(target)
+}
+
+// Remove a dotfile completely from the database
+pub fn remove_dotfile(target: &Path) -> rusqlite::Result<bool> {
+    let config = get_db_connection()?;
+    config.remove_dotfile(target)
+}
+
+// Find a dotfile by target path
+pub fn find_dotfile_by_target(target: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+    let config = get_db_connection()?;
+    config.find_dotfile_by_target(target)
 }

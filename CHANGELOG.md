@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- SQLite database for persistent storage of dotfile information
+- Enhanced file operations with clear separation of actions:
+  - `init` - Initialize a directory as a forge managed folder
+  - `stage` - Temporarily track files for symlinking
+  - `link` - Create permanent symlinks for tracked files
+  - `unlink` - Remove symlinks but keep files in the forge folder
+  - `remove` - Delete files from forge folder but keep originals
+  - `delete` - Completely remove files from the system
+  - `list` - Show tracked files and their statuses
+- File status tracking (staged, linked, unlinked)
+- Managed folders configuration for repository organization
+- Confirmation prompts for destructive operations
+- Database migration from file-based config
+- Improved error handling and reporting
+
+### Changed
+- Redesigned command structure with intuitive staging workflow
+- Removed ambiguous naming conventions
+- Added proper safety checks for destructive operations
+- Legacy command names are still supported temporarily for backward compatibility
+
 ## [0.2.0] - 2025-04-09
 
 ### Added

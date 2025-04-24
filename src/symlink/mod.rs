@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fs::{self, DirEntry};
+use std::fs::{self};
 use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;

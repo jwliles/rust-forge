@@ -21,17 +21,58 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Heat (stage) files for symlinking
-    Heat {
-        /// Files to heat
+    /// Initialize a directory as a forge managed folder
+    Init {
+        /// Name for this forge repository (defaults to directory name)
+        #[arg(short, long)]
+        name: Option<String>,
+        
+        /// Directory to initialize (defaults to current directory)
+        #[arg(short, long)]
+        dir: Option<PathBuf>,
+    },
+    /// Stage files for tracking (temporary, requires linking to make permanent)
+    Stage {
+        /// Files to stage
         files: Vec<PathBuf>,
     },
-    /// Create the symlinks for all heated files
-    Forge,
-    /// Remove symlinks for specific files
-    Cool {
-        /// Files to cool
+    /// Create symlinks for staged/tracked files
+    Link {
+        /// Files to link (if not specified, links all staged files)
         files: Vec<PathBuf>,
+    },
+    /// Remove symlinks but keep files in forge folder
+    Unlink {
+        /// Files to unlink
+        files: Vec<PathBuf>,
+        
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// Remove files from forge folder (keeps original files)
+    Remove {
+        /// Files to remove
+        files: Vec<PathBuf>,
+        
+        /// Skip confirmation prompt
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// Delete files completely from the system
+    Delete {
+        /// Files to delete
+        files: Vec<PathBuf>,
+        
+        /// Skip confirmation prompt (USE WITH CAUTION)
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// List tracked files
+    List {
+        /// Filter by profile name
+        #[arg(short, long)]
+        profile: Option<String>,
     },
     /// Manage profiles
     Profile {
@@ -60,14 +101,26 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Heat { files }) => {
-            cli::commands::heat_command(files);
+        Some(Commands::Init { name, dir }) => {
+            cli::commands::init_command(name.as_deref(), dir.as_deref());
         }
-        Some(Commands::Forge) => {
-            cli::commands::forge_command();
+        Some(Commands::Stage { files }) => {
+            cli::commands::stage_command(files);
         }
-        Some(Commands::Cool { files }) => {
-            cli::commands::cool_command(files);
+        Some(Commands::Link { files }) => {
+            cli::commands::link_command(files);
+        }
+        Some(Commands::Unlink { files, yes }) => {
+            cli::commands::unlink_command(files, *yes);
+        }
+        Some(Commands::Remove { files, yes }) => {
+            cli::commands::remove_command(files, *yes);
+        }
+        Some(Commands::Delete { files, yes }) => {
+            cli::commands::delete_command(files, *yes);
+        }
+        Some(Commands::List { profile }) => {
+            cli::commands::list_command(profile.as_deref());
         }
         Some(Commands::Profile { action }) => match action {
             ProfileActions::Create { name } => {
@@ -183,19 +236,19 @@ mod tests {
         }
         
         #[test]
-        fn test_heat_command() {
+        fn test_add_command() {
             // Create a temporary directory for our test files
             let temp = TempDir::new().unwrap();
             let test_file = temp.child("test_file");
             test_file.touch().unwrap();
             
             let mut cmd = Command::cargo_bin("dotforge").unwrap();
-            cmd.arg("heat").arg(test_file.path());
+            cmd.arg("add").arg(test_file.path());
             
             // For now just check that the command runs without error
-            // Later we'll check that the file is actually staged
+            // Later we'll check that the file is actually added
             cmd.assert().success()
-                .stdout(predicates::str::contains("Heating files:"));
+                .stdout(predicates::str::contains("Adding files:"));
         }
     }
 }

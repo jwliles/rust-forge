@@ -6,11 +6,13 @@ A powerful symlink management tool designed as a modern alternative to GNU Stow.
 
 ## Overview
 
-DotForge provides comprehensive symlink management using an intuitive workflow metaphor inspired by blacksmithing:
+DotForge provides comprehensive symlink management with clear, intuitive commands:
 
-- **Heat**: Stage files for symlinking
-- **Forge**: Create the actual symlinks
-- **Cool**: Remove symlinks and tracking
+- **Stage**: Temporarily track files for symlinking
+- **Link**: Create permanent symlinks for tracked files
+- **Unlink**: Remove symlinks but keep files in the forge folder
+- **Remove**: Delete files from the forge folder but keep originals
+- **Delete**: Completely remove files from the system
 
 ## Features
 
@@ -66,14 +68,26 @@ cargo install dotforge
 ## Basic Usage
 
 ```bash
-# Heat (stage) a file for symlinking
-dotforge heat ~/.config/nvim/init.lua
+# Initialize a directory as a forge managed folder
+dotforge init --name dotfiles
 
-# Create the symlinks for all heated files
-dotforge forge
+# Stage a file for symlinking (creates a temporary link)
+dotforge stage ~/.config/nvim/init.lua
 
-# Remove symlinks for specific files
-dotforge cool ~/.config/nvim/init.lua
+# Create permanent symlinks for all staged files
+dotforge link
+
+# Remove symlinks but keep files in the forge folder
+dotforge unlink ~/.config/nvim/init.lua
+
+# Remove files from forge folder but keep originals
+dotforge remove ~/.config/nvim/init.lua
+
+# Completely delete files from the system
+dotforge delete ~/.config/nvim/init.lua
+
+# List all tracked files
+dotforge list
 
 # Switch to a different profile
 dotforge profile switch coding
@@ -113,8 +127,8 @@ DotForge is under active development with the following milestones:
 1. **v0.1.x** - Core CLI structure and basic functionality
    - [x] Command-line interface with subcommands
    - [x] Module structure implementation
-   - [ ] Basic file operations (heat, forge, cool)
-   - [ ] SQLite state tracking
+   - [x] Basic file operations (add, link, unlink)
+   - [x] SQLite state tracking
 
 2. **v0.2.x** - Profile system and reliability
    - [ ] Multiple profile support
