@@ -14,7 +14,7 @@ It supports a complete file lifecycle with staging, linking, unlinking, removal,
 .SH COMMANDS
 .TP
 .B init [--name NAME] [--dir DIRECTORY]
-Initialize a directory as a forge managed folder.
+Initialize a directory as a forge managed folder. If no name is provided, the directory name will be used.
 .TP
 .B stage FILES...
 Stage files for tracking (creates temporary links, requires explicit linking to make permanent).
@@ -31,17 +31,23 @@ Remove files from the forge folder but keep originals. Use --yes to skip confirm
 .B delete FILES... [--yes]
 Delete files completely from the system (USE WITH CAUTION). Use --yes to skip confirmation.
 .TP
-.B list [--profile PROFILE]
-List tracked files, optionally filtered by profile.
+.B list [--profile PROFILE] [--profiles]
+List tracked files, optionally filtered by profile. With --profiles, lists available profiles instead.
+.TP
+.B switch NAME
+Switch to a different profile.
+.TP
+.B new --profile NAME PATH
+Create a new profile at the specified location.
 .TP
 .B profile create NAME
-Create a new profile.
+(Legacy) Create a new profile.
 .TP
 .B profile list
-List all available profiles.
+(Legacy) List all available profiles.
 .TP
 .B profile switch NAME
-Switch to a different profile.
+(Legacy) Switch to a different profile.
 .SH OPTIONS
 .TP
 .B \-h, \-\-help
@@ -51,13 +57,17 @@ Print help information.
 Print version information.
 .SH EXAMPLES
 .PP
-Initialize a directory as a forge managed folder:
+Initialize current directory as a forge managed folder:
+.PP
+.B dotforge init
+.PP
+Initialize with a custom name:
 .PP
 .B dotforge init --name dotfiles
 .PP
 Stage a file for symlinking:
 .PP
-.B dotforge stage ~/.config/nvim/init.lua
+.B dotforge stage nvim/init.lua
 .PP
 Create permanent symlinks for all staged files:
 .PP
@@ -65,19 +75,31 @@ Create permanent symlinks for all staged files:
 .PP
 Remove symlinks but keep files in the forge folder:
 .PP
-.B dotforge unlink ~/.config/nvim/init.lua
+.B dotforge unlink init.lua
 .PP
 Remove files from forge folder but keep originals:
 .PP
-.B dotforge remove ~/.config/nvim/init.lua
+.B dotforge remove init.lua
 .PP
 Completely delete files from the system:
 .PP
-.B dotforge delete ~/.config/nvim/init.lua
+.B dotforge delete init.lua
 .PP
 List all tracked files:
 .PP
 .B dotforge list
+.PP
+List all available profiles:
+.PP
+.B dotforge list --profiles
+.PP
+Switch to a different profile:
+.PP
+.B dotforge switch coding
+.PP
+Create a new profile at a specific location:
+.PP
+.B dotforge new --profile coding ~/dotfiles/coding
 .SH FILES
 .TP
 .I ~/.config/dotforge/

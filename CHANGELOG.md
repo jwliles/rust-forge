@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-04-24
+
+### Changed
+- Streamlined command interface for better usability
+- Added `switch` command to replace `profile switch`
+- Added `new` command to create profiles in specific locations
+- Enhanced `list` command to show profiles with `--profiles` flag
+- Updated documentation to better explain path handling
+- Marked redundant profile commands as legacy
+
 ## [0.3.1] - 2025-04-23
 
 ### Added
@@ -60,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command structure (heat, forge, cool, profile)
 - Basic symlink creation tests
 
-[Unreleased]: https://github.com/jwliles/rust-dotforge/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/jwliles/rust-dotforge/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/jwliles/rust-dotforge/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jwliles/rust-dotforge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jwliles/rust-dotforge/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jwliles/rust-dotforge/compare/v0.1.0...v0.2.0

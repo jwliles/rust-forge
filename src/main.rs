@@ -68,13 +68,31 @@ enum Commands {
         #[arg(short, long)]
         yes: bool,
     },
-    /// List tracked files
+    /// List tracked files or profiles
     List {
+        /// List profiles instead of files
+        #[arg(long)]
+        profiles: bool,
+        
         /// Filter by profile name
         #[arg(short, long)]
         profile: Option<String>,
     },
-    /// Manage profiles
+    /// Switch to a profile
+    Switch {
+        /// Profile name
+        name: String,
+    },
+    /// Create a new profile at a specific location
+    New {
+        /// Create a new profile
+        #[arg(short, long)]
+        profile: String,
+        
+        /// Location for the new profile
+        path: PathBuf,
+    },
+    /// Manage profiles (legacy, use switch/new/list commands instead)
     Profile {
         #[command(subcommand)]
         action: ProfileActions,
@@ -119,17 +137,31 @@ fn main() {
         Some(Commands::Delete { files, yes }) => {
             cli::commands::delete_command(files, *yes);
         }
-        Some(Commands::List { profile }) => {
-            cli::commands::list_command(profile.as_deref());
+        Some(Commands::List { profile, profiles }) => {
+            if *profiles {
+                cli::commands::profile::list();
+            } else {
+                cli::commands::list_command(profile.as_deref());
+            }
+        }
+        Some(Commands::Switch { name }) => {
+            cli::commands::profile::switch(name);
+        }
+        Some(Commands::New { profile, path }) => {
+            // Initialize the directory as a forge managed folder with the profile name
+            cli::commands::init_command(Some(profile), Some(path.as_path()));
         }
         Some(Commands::Profile { action }) => match action {
             ProfileActions::Create { name } => {
+                println!("Note: This command is deprecated, please use 'dotforge new --profile {}' instead", name);
                 cli::commands::profile::create(name);
             }
             ProfileActions::List => {
+                println!("Note: This command is deprecated, please use 'dotforge list --profiles' instead");
                 cli::commands::profile::list();
             }
             ProfileActions::Switch { name } => {
+                println!("Note: This command is deprecated, please use 'dotforge switch {}' instead", name);
                 cli::commands::profile::switch(name);
             }
         },

@@ -68,29 +68,32 @@ cargo install dotforge
 ## Basic Usage
 
 ```bash
-# Initialize a directory as a forge managed folder
-dotforge init --name dotfiles
+# Initialize current directory as a forge managed folder (uses directory name if no name provided)
+dotforge init [--name dotfiles]
 
 # Stage a file for symlinking (creates a temporary link)
-dotforge stage ~/.config/nvim/init.lua
+dotforge stage nvim/init.lua
 
 # Create permanent symlinks for all staged files
 dotforge link
 
 # Remove symlinks but keep files in the forge folder
-dotforge unlink ~/.config/nvim/init.lua
+dotforge unlink init.lua
 
 # Remove files from forge folder but keep originals
-dotforge remove ~/.config/nvim/init.lua
+dotforge remove init.lua
 
 # Completely delete files from the system
-dotforge delete ~/.config/nvim/init.lua
+dotforge delete init.lua
 
 # List all tracked files
 dotforge list
 
+# List all available profiles
+dotforge list --profiles
+
 # Switch to a different profile
-dotforge profile switch coding
+dotforge switch coding
 ```
 
 ## Profiles
@@ -98,14 +101,17 @@ dotforge profile switch coding
 Profiles allow you to maintain multiple configurations that target the same location:
 
 ```bash
-# Create a new profile
-dotforge profile create coding
+# Create a new profile in a specific location
+dotforge new profile coding ~/dotfiles/coding
 
 # List available profiles
-dotforge profile list
+dotforge list --profiles
 
 # Switch to a profile
-dotforge profile switch coding
+dotforge switch coding
+
+# Initialize current directory as a new profile
+dotforge init --name coding
 ```
 
 ## Interactive Mode
