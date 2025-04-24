@@ -128,22 +128,31 @@ DotForge is under active development with the following milestones:
    - [x] Command-line interface with subcommands
    - [x] Module structure implementation
    - [x] Basic file operations (add, link, unlink)
-   - [x] SQLite state tracking
 
-2. **v0.2.x** - Profile system and reliability
-   - [ ] Multiple profile support
-   - [ ] Profile switching
-   - [ ] Transaction safety
+2. **v0.2.x** - Basic profile system
+   - [x] Profile creation
+   - [x] Profile listing
+   - [x] Profile switching
 
-3. **v0.3.x** - Interactive TUI mode
+3. **v0.3.x** - Enhanced state management
+   - [x] SQLite database for persistent storage
+   - [x] Managed folders concept
+   - [x] Complete file lifecycle (stage, link, unlink, remove, delete)
+   - [x] Confirmation prompts for destructive operations
+   - [x] File status tracking
+   - [ ] Transaction safety with rollbacks
+   - [ ] Man page documentation
+   - [ ] Shell completion scripts
+
+4. **v0.4.x** - Interactive TUI mode
    - [ ] Visual interface for operations
    - [ ] Real-time status updates
-   - [ ] Profile management
+   - [ ] Profile management via TUI
 
-4. **v1.0.0** - Production release
+5. **v1.0.0** - Production release
    - [ ] Complete feature set
    - [ ] Comprehensive tests
-   - [ ] Documentation
+   - [ ] Comprehensive documentation
 
 ## Version Policy and crates.io Releases
 
