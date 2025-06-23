@@ -31,10 +31,18 @@ enum Commands {
         #[arg(short, long)]
         dir: Option<PathBuf>,
     },
-    /// Stage files for tracking (temporary, requires linking to make permanent)
+    /// Stage files or directories for tracking (temporary, requires linking to make permanent)
     Stage {
-        /// Files to stage
+        /// Files or directories to stage
         files: Vec<PathBuf>,
+        
+        /// Process directories recursively (all levels)
+        #[arg(short, long)]
+        recursive: bool,
+        
+        /// Maximum recursion depth for directories (overrides --recursive)
+        #[arg(long)]
+        depth: Option<usize>,
     },
     /// Create symlinks for staged/tracked files
     Link {
@@ -97,6 +105,58 @@ enum Commands {
         #[command(subcommand)]
         action: ProfileActions,
     },
+    /// Start packing files for portable configuration bundles
+    Start {
+        #[command(subcommand)]
+        action: StartActions,
+    },
+    /// Add files to an existing pack
+    Pack {
+        /// Files to add to the current pack
+        files: Vec<PathBuf>,
+        /// Pack scope (defaults to current working directory name)
+        #[arg(short, long)]
+        scope: Option<String>,
+    },
+    /// Seal the current pack into a portable archive
+    Seal {
+        /// Pack scope to seal (defaults to current working directory name)
+        #[arg(short, long)]
+        scope: Option<String>,
+    },
+    /// Install a sealed pack on this system
+    Install {
+        /// Path to the pack archive (.zip file)
+        archive: PathBuf,
+        /// Skip conflict warnings
+        #[arg(short, long)]
+        force: bool,
+    },
+    /// Update files in an existing pack
+    Repack {
+        /// Pack scope to repack (defaults to current working directory name)
+        #[arg(short, long)]
+        scope: Option<String>,
+        /// Specific files to repack (defaults to all files in pack)
+        files: Vec<PathBuf>,
+    },
+    /// Remove files from a pack
+    Unpack {
+        /// Files to remove from pack
+        files: Vec<PathBuf>,
+        /// Pack scope (defaults to current working directory name)
+        #[arg(short, long)]
+        scope: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum StartActions {
+    /// Start packing files into a portable bundle
+    Packing {
+        /// Unique identifier for this pack
+        scope: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -122,8 +182,8 @@ fn main() {
         Some(Commands::Init { name, dir }) => {
             cli::commands::init_command(name.as_deref(), dir.as_deref());
         }
-        Some(Commands::Stage { files }) => {
-            cli::commands::stage_command(files);
+        Some(Commands::Stage { files, recursive, depth }) => {
+            cli::commands::stage_command(files, *recursive, *depth);
         }
         Some(Commands::Link { files }) => {
             cli::commands::link_command(files);
@@ -165,6 +225,26 @@ fn main() {
                 cli::commands::profile::switch(name);
             }
         },
+        Some(Commands::Start { action }) => match action {
+            StartActions::Packing { scope } => {
+                cli::commands::pack::start_packing(scope);
+            }
+        },
+        Some(Commands::Pack { files, scope }) => {
+            cli::commands::pack::pack_files(files, scope.as_deref());
+        }
+        Some(Commands::Seal { scope }) => {
+            cli::commands::pack::seal_pack(scope.as_deref());
+        }
+        Some(Commands::Install { archive, force }) => {
+            cli::commands::pack::install_pack(archive, *force);
+        }
+        Some(Commands::Repack { scope, files }) => {
+            cli::commands::pack::repack_files(scope.as_deref(), files);
+        }
+        Some(Commands::Unpack { files, scope }) => {
+            cli::commands::pack::unpack_files(files, scope.as_deref());
+        }
         None => {
             if cli.interactive {
                 println!("Starting interactive mode");

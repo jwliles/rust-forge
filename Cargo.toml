@@ -9,6 +9,10 @@ repository = "https://github.com/jwliles/rust-dotforge"
 keywords = ["symlink", "dotfiles", "stow", "configuration"]
 categories = ["command-line-utilities", "filesystem"]
 
+[[bin]]
+name = "forge"  # This will be the binary name
+path = "src/main.rs"
+
 [dependencies]
 tempfile = "3.8"
 assert_fs = "1.0"
@@ -19,6 +23,11 @@ dirs = "5.0"
 thiserror = "1.0"
 anyhow = "1.0"
 walkdir = "2.4"
+toml = "0.8"
+zip = "0.6"
+chrono = { version = "0.4", features = ["serde"] }
+blake3 = "1.5"
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 test-case = "3.2"

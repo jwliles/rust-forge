@@ -660,6 +660,46 @@ impl Config {
             Ok(None)
         }
     }
+    
+    // Find a dotfile by source path
+    pub fn find_dotfile_by_source(&self, source: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+        if let Some(conn) = &self.connection {
+            let source_str = source.to_string_lossy().to_string();
+            
+            let result = conn.query_row(
+                "SELECT source, target, profile, status FROM dotfiles WHERE source = ? AND active = 1",
+                [source_str],
+                |row| {
+                    let source: String = row.get(0)?;
+                    let target: String = row.get(1)?;
+                    let profile: Option<String> = row.get(2)?;
+                    let status_str: String = row.get(3)?;
+                    
+                    let status = match status_str.as_str() {
+                        "staged" => crate::dotfile::DotFileStatus::Staged,
+                        "linked" => crate::dotfile::DotFileStatus::Linked,
+                        "unlinked" => crate::dotfile::DotFileStatus::Unlinked,
+                        _ => crate::dotfile::DotFileStatus::Staged,
+                    };
+                    
+                    Ok(crate::dotfile::DotFile::with_status(
+                        PathBuf::from(source),
+                        PathBuf::from(target),
+                        profile,
+                        status,
+                    ))
+                },
+            );
+            
+            match result {
+                Ok(dotfile) => Ok(Some(dotfile)),
+                Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+                Err(e) => Err(e),
+            }
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 // Static helper functions to use when a Config instance is not available
@@ -801,4 +841,10 @@ pub fn remove_dotfile(target: &Path) -> rusqlite::Result<bool> {
 pub fn find_dotfile_by_target(target: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
     let config = get_db_connection()?;
     config.find_dotfile_by_target(target)
+}
+
+// Find a dotfile by source path
+pub fn find_dotfile_by_source(source: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+    let config = get_db_connection()?;
+    config.find_dotfile_by_source(source)
 }

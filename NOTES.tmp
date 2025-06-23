@@ -1,0 +1,35 @@
+# Current Development Notes
+
+## Project Context
+- DotForge: A modern symlink management tool (alternative to GNU Stow)
+- Currently working on v0.3.x features
+- Recent work: command interface improvements, man page documentation, recursive directory support
+- Migrating docs from MkDocs to mdBook
+
+## Recent Implemented Features
+- [x] Recursive directory staging with `--recursive` flag
+- [x] Configurable directory traversal depth with `--depth=N` option
+- [x] Fixed directory structure preservation when recursively staging files
+- [x] Fixed `link` command to properly handle linking directories by name
+- [x] Improved link command to handle directories correctly during linking
+- [x] Binary name aliasing via Cargo.toml `[[bin]]` section (now available as `forge`)
+
+## Issues Fixed
+- Fixed files in recursive directory staging being placed in the root of the dotfiles directory
+- Fixed `link` command not finding files when specified by directory name
+- Fixed errors during directory linking (now directories are handled differently than files)
+
+## Current Tasks
+- [ ] Complete transaction safety with rollbacks
+- [ ] Shell completion scripts
+- [ ] Interactive TUI mode planning
+
+## Next Steps
+- Test recursive directory staging with various config directories
+- Possibly extend recursive support to other commands (unlink, remove, delete)
+- Finish documentation migration
+- Complete v0.3.x milestone items
+- Begin work on Interactive TUI (v0.4.x)
+
+## Development Environment
+Last session: fixed recursive directory staging issues and implemented binary aliasing

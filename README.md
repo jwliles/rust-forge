@@ -74,6 +74,12 @@ dotforge init [--name dotfiles]
 # Stage a file for symlinking (creates a temporary link)
 dotforge stage nvim/init.lua
 
+# Stage an entire directory with all its contents recursively 
+dotforge stage --recursive ~/.config/nvim
+
+# Stage a directory with contents up to a specific depth
+dotforge stage --depth=2 ~/.config/i3
+
 # Create permanent symlinks for all staged files
 dotforge link
 
@@ -121,6 +127,14 @@ Launch the interactive TUI mode with:
 ```bash
 dotforge -I
 ```
+
+## Requirements
+
+- Rust (Minimum supported version: 1.65.0)
+- GNU/Linux or other free operating system
+- Standard system libraries
+
+**Note**: DotForge is developed exclusively for free operating systems. It is not officially tested or supported on proprietary platforms.
 
 ## License
 
