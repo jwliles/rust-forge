@@ -1,0 +1,590 @@
+.TH FORGE 1 "June 2025" "forge 0.4.0" "User Commands"
+.SH NAME
+forge \- a powerful symlink management tool with pack-and-go configuration bundles
+.SH SYNOPSIS
+.B forge
+[\fB\-I\fR|\fB\-\-interactive\fR]
+[\fB\-h\fR|\fB\-\-help\fR]
+[\fB\-V\fR|\fB\-\-version\fR]
+\fICOMMAND\fR
+[\fICOMMAND_OPTIONS\fR]
+[\fIARGS\fR...]
+.SH DESCRIPTION
+.B forge
+is a modern alternative to GNU Stow for managing configuration files through symlinks. It provides advanced features including profile management, recursive directory staging, and portable pack-and-go bundles for configuration migration between systems.
+.PP
+Forge follows a deliberate, safe-by-default philosophy where configuration files are staged before linking, preventing accidental modifications. The pack-and-go system enables users to create portable archives of their configurations with BLAKE3 integrity checking and flexible deployment options.
+.PP
+The tool operates in multiple phases: initialization creates managed repositories, staging prepares files for tracking, linking creates permanent symlinks, and pack-and-go creates portable bundles for migration. All operations maintain detailed SQLite database records for tracking and recovery. 
+.SH COMMANDS
+.SS Repository Management
+.TP
+.B init
+[\fB\-n\fR|\fB\-\-name\fR \fINAME\fR]
+[\fB\-d\fR|\fB\-\-dir\fR \fIDIRECTORY\fR]
+Initialize a directory as a forge managed folder. Creates .forge subdirectory and registers the repository in the global database. If \fINAME\fR is not provided, uses the directory name. If \fIDIRECTORY\fR is not provided, uses current working directory. Sets up SQLite database for file tracking.
+.TP
+.B list
+[\fB\-\-profiles\fR]
+[\fB\-p\fR|\fB\-\-profile\fR \fINAME\fR]
+List tracked files or available profiles. Without options, shows all tracked files in the current repository with their status (staged, linked, unlinked). With \fB\-\-profiles\fR, lists all available profiles. With \fB\-\-profile\fR \fINAME\fR, shows files only in the specified profile.
+.SS File Management
+.TP
+.B stage \fIFILES\fR...
+[\fB\-r\fR|\fB\-\-recursive\fR]
+[\fB\-\-depth\fR \fIN\fR]
+Stage files or directories for tracking. Creates temporary symlinks from the forge directory to original files. Files remain in original locations until \fBlink\fR is called. With \fB\-\-recursive\fR, processes directories recursively to unlimited depth. With \fB\-\-depth\fR \fIN\fR, limits recursion to N levels (overrides \fB\-\-recursive\fR). Preserves directory structure in forge repository. Updates SQLite database with staged status.
+.TP
+.B link
+[\fIFILES\fR...]
+Create permanent symlinks for staged files. Moves files from original locations to forge directory and creates symlinks at original locations. If \fIFILES\fR are specified, links only those files. If no files specified, links all staged files. For directories, updates tracking status without moving the directory itself. Updates database status from staged to linked.
+.TP
+.B unlink \fIFILES\fR...
+[\fB\-y\fR|\fB\-\-yes\fR]
+Remove symlinks and restore original files. Copies files from forge directory back to original locations, removes symlinks, and updates database status to staged. Prompts for confirmation unless \fB\-\-yes\fR is specified. Files remain in forge directory for potential re-linking.
+.TP
+.B remove \fIFILES\fR...
+[\fB\-y\fR|\fB\-\-yes\fR]
+Remove files from forge tracking completely. Restores original files to their locations, removes files from forge directory, and removes database entries. This completely severs the relationship between forge and the files. Prompts for confirmation unless \fB\-\-yes\fR is specified.
+.TP
+.B delete \fIFILES\fR...
+[\fB\-y\fR|\fB\-\-yes\fR]
+Delete files completely from the system. Removes files from both forge directory and original locations, and removes database entries. This is a destructive operation that cannot be undone. Requires explicit confirmation unless \fB\-\-yes\fR is specified.
+.SS Profile Management
+.TP
+.B switch \fINAME\fR
+Switch to a profile and activate all its files. Creates symlinks for all files associated with the specified profile from their profile directory to the default target directory. Updates database with profile associations. Uses walkdir to process profile directory contents.
+.TP
+.B new \-\-profile \fINAME\fR \fIPATH\fR
+Create a new profile at the specified location. Initializes the path as a forge managed folder with the given profile name. Equivalent to running \fBinit\fR with \fB\-\-name\fR \fINAME\fR and \fB\-\-dir\fR \fIPATH\fR.
+.TP
+.B profile create \fINAME\fR
+(Legacy) Create a new profile in the default profiles directory (~/.forge/profiles/\fINAME\fR). Creates directory structure if it does not exist. Deprecated in favor of \fBnew\fR command.
+.TP
+.B profile list
+(Legacy) List all available profiles by scanning the profiles directory. Shows profile names found in ~/.forge/profiles/. Deprecated in favor of \fBlist --profiles\fR.
+.TP
+.B profile switch \fINAME\fR
+(Legacy) Switch to the specified profile. Deprecated in favor of \fBswitch\fR command.
+.SS Pack-and-Go System
+.TP
+.B start packing \fISCOPE\fR
+Initialize a new pack with the given scope identifier. Creates staging directory at .forge/tmp/pack/\fISCOPE\fR/files/ and initializes manifest.toml with pack metadata. Prevents accidental pack creation by requiring explicit "start packing" command. Scope must be unique within the repository.
+.TP
+.B pack \fIFILES\fR...
+[\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
+[\fB\-r\fR|\fB\-\-recursive\fR]
+[\fB\-\-depth\fR \fIN\fR]
+[\fB\-\-dry\-run\fR]
+Add files to an existing pack staging area. Copies files to pack directory with relative paths preserved, calculates BLAKE3 hashes, and updates manifest with file metadata (target path, size, modification time, hash). If \fB\-\-scope\fR is not specified, uses current directory name as scope. Files are copied, not moved, preserving originals. With \fB\-\-recursive\fR, processes directories recursively to unlimited depth, preserving directory structure within the pack. With \fB\-\-depth\fR \fIN\fR, limits recursion to N levels (overrides \fB\-\-recursive\fR). With \fB\-\-dry\-run\fR, shows what would be packed without actually copying files.
+.TP
+.B seal
+[\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
+Finalize pack into timestamped ZIP archive. Creates archive at .forge/archives/\fISCOPE\fR-YYYY-MM-DD.zip with Deflate compression. Includes manifest.toml and all files from staging area. Removes staging directory after successful archive creation. Archive naming prevents overwrites by including date.
+.TP
+.B install \fIARCHIVE\fR
+[\fB\-f\fR|\fB\-\-force\fR]
+[\fB\-\-skip\-existing\fR]
+[\fB\-t\fR|\fB\-\-target\fR \fIDIRECTORY\fR]
+[\fB\-\-map\-home\fR]
+[\fB\-\-dry\-run\fR]
+Install a sealed pack on a new system. Extracts archive to temporary directory, validates manifest.toml, and installs files. By default, installs to current working directory using filenames only. With \fB\-\-target\fR, installs relative to specified directory. With \fB\-\-map\-home\fR, maps home directory paths to current user. With \fB\-\-force\fR, overwrites existing files. With \fB\-\-skip\-existing\fR, skips files that already exist. With \fB\-\-dry\-run\fR, shows installation plan without making changes. Validates BLAKE3 hashes during installation.
+.TP
+.B restore \fIARCHIVE\fR
+[\fB\-f\fR|\fB\-\-force\fR]
+[\fB\-\-skip\-existing\fR]
+[\fB\-\-test\fR]
+[\fB\-\-dry\-run\fR]
+Restore a sealed pack to original absolute paths on current system. Used for configuration recovery and backup restoration. By default, restores to original paths from manifest. With \fB\-\-test\fR, restores to current directory using filenames only for safe testing. With \fB\-\-force\fR, overwrites existing files. With \fB\-\-skip\-existing\fR, skips files that already exist. With \fB\-\-dry\-run\fR, shows restoration plan without making changes. Validates BLAKE3 hashes during restoration.
+.TP
+.B explain \fIARCHIVE\fR
+[\fB\-\-install\fR]
+[\fB\-\-restore\fR]
+[\fB\-t\fR|\fB\-\-target\fR \fIDIRECTORY\fR]
+Analyze pack contents and show detailed installation/restoration plans. Extracts manifest without installing files. Shows pack metadata (scope, creation date, file count, total size), complete file listing with paths and hash previews, and installation plans with conflict detection. By default shows both install and restore plans. With \fB\-\-install\fR, shows only installation plan. With \fB\-\-restore\fR, shows only restoration plan. With \fB\-\-target\fR, previews installation to specific directory.
+.TP
+.B repack
+[\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
+[\fIFILES\fR...]
+Update files in an existing pack staging area. If \fIFILES\fR are specified, repacks only those files with updated content and metadata. If no files specified, repacks all files listed in manifest with current content from disk. Updates BLAKE3 hashes and modification times. Does not re-seal the pack.
+.TP
+.B unpack \fIFILES\fR...
+[\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
+Remove files from pack staging area. Removes specified files from pack directory and removes entries from manifest.toml. Does not affect files in their original locations. Pack remains active for additional files or sealing.
+.SH OPTIONS
+.TP
+.B \-I, \-\-interactive
+Use interactive mode (under development)
+.TP
+.B \-h, \-\-help
+Print help information.
+.TP
+.B \-V, \-\-version
+Print version information.
+.SH PACK-AND-GO WORKFLOW
+The pack-and-go system follows a deliberate workflow for creating portable configuration bundles:
+.PP
+.B 1. Create Pack
+.RS
+forge start packing vim_config
+.RE
+.PP
+.B 2. Add Files
+.RS
+forge pack ~/.vimrc ~/.vim/
+.RE
+.PP
+.B 3. Seal Archive
+.RS
+forge seal
+.RE
+.PP
+.B 4. Deploy on New System
+.RS
+# Test installation
+.br
+forge explain vim_config-2025-06-23.zip
+.br
+forge install vim_config-2025-06-23.zip --dry-run
+.br
+# Production installation
+.br
+forge install vim_config-2025-06-23.zip --target /home/user
+.RE
+.PP
+.B 5. Restore on Current System
+.RS
+# Recover from backup
+.br
+forge restore vim_config-2025-06-23.zip --force
+.RE
+.SH EXAMPLES
+.SS Repository Management
+Initialize a forge repository in current directory:
+.PP
+.B forge init
+.PP
+Initialize a forge repository with custom name and location:
+.PP
+.B forge init --name my_dotfiles --dir /path/to/config
+.PP
+List all managed repositories and their status:
+.PP
+.B forge list
+.PP
+List all available profiles:
+.PP
+.B forge list --profiles
+.SS File Staging and Linking
+Stage individual configuration files:
+.PP
+.B forge stage ~/.vimrc ~/.bashrc ~/.gitconfig
+.PP
+Stage a directory with limited recursion depth:
+.PP
+.B forge stage --depth 2 ~/.config/nvim
+.PP
+Stage a directory recursively (unlimited depth):
+.PP
+.B forge stage --recursive ~/.config
+.PP
+Link all staged files:
+.PP
+.B forge link
+.PP
+Link specific files only:
+.PP
+.B forge link ~/.vimrc ~/.bashrc
+.PP
+Link all files in a specific directory:
+.PP
+.B forge link nvim
+.SS File Management Operations
+Remove symlinks but keep files in forge directory:
+.PP
+.B forge unlink ~/.vimrc ~/.bashrc
+.PP
+Remove files from forge tracking completely:
+.PP
+.B forge remove --yes ~/.old_config
+.PP
+Delete files permanently from system (DESTRUCTIVE):
+.PP
+.B forge delete --yes ~/.unwanted_config
+.SS Profile Management
+Create a new profile at specific location:
+.PP
+.B forge new --profile work_setup /home/user/work_dotfiles
+.PP
+Switch to an existing profile:
+.PP
+.B forge switch development
+.PP
+Legacy profile commands (deprecated):
+.PP
+.B forge profile create development
+.br
+.B forge profile list
+.br
+.B forge profile switch development
+.SS Pack-and-Go Workflow Examples
+Create a complete dotfiles backup:
+.PP
+.B forge start packing complete_backup
+.br
+.B forge pack ~/.vimrc ~/.bashrc ~/.gitconfig ~/.ssh/config
+.br
+.B forge pack --scope complete_backup --recursive ~/.config/nvim/
+.br
+.B forge seal --scope complete_backup
+.PP
+Create a minimal vim configuration pack:
+.PP
+.B forge start packing vim_minimal
+.br
+.B forge pack ~/.vimrc
+.br
+.B forge pack --recursive ~/.vim/colors/ ~/.vim/plugins/
+.br
+.B forge seal
+.PP
+Create a configuration pack with limited depth:
+.PP
+.B forge start packing configs_shallow
+.br
+.B forge pack --depth 2 ~/.config/
+.br
+.B forge seal
+.PP
+Preview what would be packed (dry-run):
+.PP
+.B forge pack --recursive --dry-run ~/.dotfiles/
+.PP
+Preview pack contents before installation:
+.PP
+.B forge explain vim_minimal-2025-06-23.zip
+.PP
+Preview installation plan with custom target:
+.PP
+.B forge explain vim_minimal-2025-06-23.zip --install --target /home/newuser
+.PP
+Preview restoration plan:
+.PP
+.B forge explain backup-2025-06-23.zip --restore
+.SS Installation Examples
+Safe installation (skip existing files):
+.PP
+.B forge install vim_minimal-2025-06-23.zip --skip-existing
+.PP
+Force installation (overwrite conflicts):
+.PP
+.B forge install vim_minimal-2025-06-23.zip --force
+.PP
+Install to specific directory:
+.PP
+.B forge install vim_minimal-2025-06-23.zip --target /home/user/configs
+.PP
+Install with home directory mapping:
+.PP
+.B forge install backup-2025-06-23.zip --map-home --target /home/newuser
+.PP
+Dry run installation (preview only):
+.PP
+.B forge install vim_minimal-2025-06-23.zip --dry-run --target /tmp/test
+.SS Restoration Examples
+Test restore to current directory (safe):
+.PP
+.B forge restore backup-2025-06-23.zip --test
+.PP
+Production restore to original paths:
+.PP
+.B forge restore backup-2025-06-23.zip --force
+.PP
+Dry run restoration (preview only):
+.PP
+.B forge restore backup-2025-06-23.zip --dry-run
+.PP
+Skip existing files during restoration:
+.PP
+.B forge restore backup-2025-06-23.zip --skip-existing
+.SS Pack Maintenance Examples
+Update specific files in an existing pack:
+.PP
+.B forge repack --scope vim_config ~/.vimrc ~/.vim/vimrc
+.PP
+Update all files in a pack with current versions:
+.PP
+.B forge repack --scope complete_backup
+.PP
+Remove files from a pack:
+.PP
+.B forge unpack --scope vim_config ~/.vim/deprecated_plugin
+.PP
+Remove files and reseal pack:
+.PP
+.B forge unpack ~/.vim/old_config
+.br
+.B forge seal
+.SS Advanced Directory Packing Examples
+Pack entire configuration directories with structure preservation:
+.PP
+.B forge start packing dev_environment
+.br
+.B forge pack --recursive ~/.config/nvim/ ~/.config/tmux/
+.br
+.B forge pack --depth 1 ~/.local/bin/
+.br
+.B forge seal
+.PP
+Preview complex directory packing before execution:
+.PP
+.B forge pack --recursive --dry-run ~/.dotfiles/ ~/.scripts/
+.PP
+Pack with different depth limits for different directories:
+.PP
+.B forge start packing mixed_configs
+.br
+.B forge pack --recursive ~/.bashrc ~/.zshrc
+.br
+.B forge pack --depth 3 ~/.config/
+.br
+.B forge pack --depth 1 ~/.local/share/applications/
+.br
+.B forge seal
+.SH FILES
+.SS Global Configuration
+.TP
+.I ~/.forge/
+Global forge configuration directory containing user-wide settings and managed folder registry.
+.TP
+.I ~/.forge/config.db
+Global SQLite database tracking all managed repositories, file associations, and profile mappings across the system.
+.TP
+.I ~/.forge/profiles/
+Default location for legacy profile directories. Each subdirectory represents a profile containing configuration files.
+.SS Local Repository Structure
+.TP
+.I .forge/
+Local repository metadata directory created by \fBforge init\fR. Contains all repository-specific data and temporary files.
+.TP
+.I .forge/database.db
+Local SQLite database for the current repository. Tracks staged files, linked files, and their status within this repository.
+.TP
+.I .forge/tmp/
+Temporary directory for various forge operations including pack staging and file processing.
+.TP
+.I .forge/tmp/pack/
+Pack staging areas created by \fBforge start packing\fR. Each pack scope gets its own subdirectory.
+.TP
+.I .forge/tmp/pack/SCOPE/
+Individual pack staging directory containing files and manifest for a specific pack scope.
+.TP
+.I .forge/tmp/pack/SCOPE/files/
+Directory containing actual files being packed, preserving their relative path structure from source.
+.TP
+.I .forge/tmp/pack/SCOPE/manifest.toml
+Pack manifest file containing metadata, file listings, BLAKE3 hashes, and target paths for the pack.
+.TP
+.I .forge/archives/
+Directory containing sealed pack archives created by \fBforge seal\fR. Archives are named with scope and timestamp.
+.TP
+.I .forge/archives/SCOPE-YYYY-MM-DD.zip
+Individual sealed pack archive containing manifest.toml and all packed files with Deflate compression.
+.SS Tracked Files
+.TP
+.I REPOSITORY_PATH/
+The main repository directory initialized with \fBforge init\fR. Contains actual configuration files managed by forge.
+.TP
+.I REPOSITORY_PATH/filename
+Configuration files moved here from their original locations after \fBforge link\fR. Original locations contain symlinks.
+.TP
+.I REPOSITORY_PATH/directory/
+Subdirectories preserving the structure of recursively staged directory trees.
+.SS Temporary Files
+.TP
+.I /tmp/forge_*
+Temporary files and directories created during pack operations, automatically cleaned up after successful completion.
+.TP
+.I /tmp/forge_extract_*
+Temporary extraction directories used during \fBforge install\fR, \fBforge restore\fR, and \fBforge explain\fR operations.
+.SH EXIT STATUS
+.B forge
+exits with status 0 on success, and >0 if an error occurs.
+.SH SECURITY
+.SS File Integrity Protection
+Forge employs BLAKE3 cryptographic hashing for comprehensive file integrity verification in pack-and-go archives. Each file in a pack has its BLAKE3 hash calculated during \fBforge pack\fR and stored in the manifest.toml. During \fBforge install\fR or \fBforge restore\fR operations, file hashes are recalculated and verified against manifest values. Hash mismatches trigger warnings and cause affected files to be skipped, preventing corruption or tampering.
+.PP
+BLAKE3 provides superior security and performance compared to traditional hash functions, offering cryptographic strength against collision attacks while maintaining fast computation speeds for large configuration files.
+.SS Pack Archive Security
+Pack manifests (manifest.toml) contain comprehensive metadata including original absolute file paths, file sizes, modification timestamps, and BLAKE3 hash values. This metadata enables detection of:
+.IP \(bu 4
+File corruption during transfer or storage
+.IP \(bu 4
+Unauthorized modifications to pack contents
+.IP \(bu 4
+Incomplete or interrupted installations
+.IP \(bu 4
+Path traversal attempts during extraction
+.SS Verification Best Practices
+Users should always verify pack sources and contents before installation:
+.IP \(bu 4
+Use \fBforge explain\fR to inspect pack contents and installation plans
+.IP \(bu 4
+Review file paths for unexpected locations or path traversal attempts
+.IP \(bu 4
+Verify pack creation dates and sources match expectations
+.IP \(bu 4
+Use \fB--dry-run\fR flags to preview operations before execution
+.SS Path Security
+Pack installation and restoration operations include path validation to prevent:
+.IP \(bu 4
+Path traversal attacks using "../" sequences
+.IP \(bu 4
+Installation outside intended directory boundaries
+.IP \(bu 4
+Overwriting critical system files
+.IP \(bu 4
+Symlink attacks attempting to redirect file operations
+.SS Database Security
+SQLite databases (.forge/database.db and ~/.forge/config.db) contain file tracking information and repository metadata. These databases are created with appropriate filesystem permissions and include integrity checks to detect corruption. Regular users cannot modify tracking information through direct database access.
+.SS Symlink Safety
+Forge creates and manages symlinks with careful validation:
+.IP \(bu 4
+Target validation prevents links to non-existent or invalid paths
+.IP \(bu 4
+Existing symlinks are verified before modification
+.IP \(bu 4
+Recursive symlink detection prevents infinite loops
+.IP \(bu 4
+Permission preservation maintains original file access controls
+.SH ENVIRONMENT
+.TP
+.B HOME
+Used to determine the default location for global configuration directory (~/.forge/) and legacy profile storage (~/.forge/profiles/).
+.TP
+.B CARGO_MANIFEST_DIR
+Used during build process to locate the man page file for installation. Not used during runtime.
+.TP
+.B TMPDIR, TMP, TEMP
+Used by the tempfile crate to determine temporary directory location for pack extraction operations. Defaults to /tmp on Unix systems.
+.SH DIAGNOSTICS
+.SS Common Error Messages
+.TP
+.B "No managed folders found. Please run 'forge init' first."
+Indicates that forge cannot find any initialized repositories. Run \fBforge init\fR in the desired directory to create a new repository.
+.TP
+.B "Target already exists in forge folder"
+Occurs during staging when a file with the same name already exists in the forge directory. Use a different name or remove the existing file.
+.TP
+.B "File not found in staging"
+Indicates that \fBforge link\fR was called on a file that has not been staged. Use \fBforge stage\fR first to prepare the file for linking.
+.TP
+.B "Hash mismatch detected"
+Occurs during pack installation when a file's BLAKE3 hash doesn't match the manifest. The file may be corrupted or tampered with.
+.TP
+.B "Pack scope already exists"
+Indicates that \fBforge start packing\fR was called with a scope name that already has an active pack. Use a different scope name or complete the existing pack.
+.SS Debugging Information
+Forge provides detailed error messages including file paths, operation contexts, and suggested remediation steps. For additional debugging:
+.IP \(bu 4
+Check file permissions on forge directories and configuration files
+.IP \(bu 4
+Verify that target directories exist and are writable
+.IP \(bu 4
+Use \fB--dry-run\fR flags to preview operations without making changes
+.IP \(bu 4
+Run \fBforge list\fR to verify repository state and file tracking status
+.SH KNOWN ISSUES
+.SS File System Limitations
+.IP \(bu 4
+Symlink creation may fail on filesystems that don't support symbolic links (e.g., FAT32, some network filesystems)
+.IP \(bu 4
+Very long file paths may cause issues on systems with path length limitations
+.IP \(bu 4
+Case-sensitive filesystems may cause conflicts when moving between different systems
+.SS Pack-and-Go Limitations
+.IP \(bu 4
+Pack archives do not preserve file permissions or ownership metadata
+.IP \(bu 4
+Symbolic links within packed files are converted to regular files
+.IP \(bu 4
+Special files (device files, named pipes) are not supported in packs
+.IP \(bu 4
+Archive timestamps use local timezone and may not be portable across time zones
+.SS Database Consistency
+.IP \(bu 4
+Concurrent access to the same repository from multiple forge instances may cause database locking issues
+.IP \(bu 4
+Manual file system operations outside of forge may cause database inconsistencies
+.IP \(bu 4
+System crashes during file operations may leave databases in inconsistent states
+.SS Legacy Compatibility
+.IP \(bu 4
+Profile commands (\fBforge profile\fR) are deprecated and may be removed in future versions
+.IP \(bu 4
+Changes to pack manifest format may cause compatibility issues with archives created by older versions
+.SH FUTURE FEATURES
+.SS Planned Enhancements
+.IP \(bu 4
+Interactive mode (\fB-I\fR, \fB--interactive\fR) for guided repository management
+.IP \(bu 4
+Shell completion for bash, zsh, and fish shells
+.IP \(bu 4
+Restore logging with detailed installation/restoration reports
+.IP \(bu 4
+Configuration file for default settings and preferences
+.IP \(bu 4
+Support for Git integration and version control workflows
+.IP \(bu 4
+Network-based pack sharing and repository synchronization
+.IP \(bu 4
+Plugin system for extending forge functionality
+.IP \(bu 4
+Graphical user interface for repository management
+.SS Compatibility Considerations
+Future versions will maintain backward compatibility for:
+.IP \(bu 4
+Existing pack archive formats and manifests
+.IP \(bu 4
+SQLite database schemas and migration paths
+.IP \(bu 4
+Core command-line interface and argument structure
+.IP \(bu 4
+File system layout and directory organization
+.SH AUTHOR
+Written by jwl.
+.SH REPORTING BUGS
+Report bugs to the GitHub issue tracker: <https://github.com/jwliles/rust-forge/issues>
+.PP
+When reporting bugs, please include:
+.IP \(bu 4
+forge version (\fBforge --version\fR)
+.IP \(bu 4
+Operating system and version
+.IP \(bu 4
+Complete command line that triggered the issue
+.IP \(bu 4
+Full error message and stack trace if available
+.IP \(bu 4
+Relevant file paths and repository structure
+.PP
+For feature requests, enhancement suggestions, or general discussion, use the GitHub Discussions feature or create an enhancement issue with the "enhancement" label.
+.SH COPYRIGHT
+Copyright \(co 2025 jwl. License GPL-3.0-or-later: <https://www.gnu.org/licenses/gpl-3.0.html>.
+.PP
+This is free software: you are free to change and redistribute it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+.PP
+There is NO WARRANTY, to the extent permitted by law. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+.SH SEE ALSO
+.BR stow (8),
+.BR ln (1),
+.BR rsync (1),
+.BR git (1),
+.BR symlink (2),
+.BR blake3sum (1),
+.BR zip (1),
+.BR sqlite3 (1)
+.PP
+Online documentation and examples: <https://github.com/jwliles/rust-forge/wiki>
+.PP
+For GNU Stow users transitioning to forge, see the migration guide in the project documentation.
