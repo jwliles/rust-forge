@@ -51,13 +51,13 @@ pub fn init_command(name: Option<&str>, dir: Option<&Path>) {
         }
     }
     
-    // Create a .dotforge subfolder in the managed folder
-    let dotforge_dir = init_dir.join(".dotforge");
-    if !dotforge_dir.exists() {
-        match fs::create_dir_all(&dotforge_dir) {
-            Ok(_) => println!("Created .dotforge directory"),
+    // Create a .forge subfolder in the managed folder
+    let forge_dir = init_dir.join(".forge");
+    if !forge_dir.exists() {
+        match fs::create_dir_all(&forge_dir) {
+            Ok(_) => println!("Created .forge directory"),
             Err(e) => {
-                eprintln!("Failed to create .dotforge directory: {}", e);
+                eprintln!("Failed to create .forge directory: {}", e);
                 return;
             }
         }
@@ -95,7 +95,7 @@ pub fn stage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -265,7 +265,7 @@ pub fn link_command(files: &[PathBuf]) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -503,7 +503,7 @@ pub fn unlink_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -612,7 +612,7 @@ pub fn remove_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -708,7 +708,7 @@ pub fn delete_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -819,7 +819,7 @@ pub mod profile {
     use std::path::PathBuf;
     use crate::config;
     
-    const PROFILES_DIR: &str = ".dotforge/profiles";
+    const PROFILES_DIR: &str = ".forge/profiles";
     
     /// Create a new profile
     pub fn create(name: &str) {

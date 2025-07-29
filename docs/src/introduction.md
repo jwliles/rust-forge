@@ -1,10 +1,10 @@
-# Introduction to DotForge
+# Introduction to Forge
 
-DotForge is a powerful symlink management tool designed as a modern alternative to GNU Stow. It provides comprehensive management of dotfiles, scripts, and other configuration files with clear, intuitive commands.
+Forge is a powerful symlink management tool designed as a modern alternative to GNU Stow. It provides comprehensive management of dotfiles, scripts, and other configuration files with clear, intuitive commands.
 
-## Why DotForge?
+## Why Forge?
 
-DotForge was created to solve common issues with dotfile management:
+Forge was created to solve common issues with dotfile management:
 
 - Managing dotfiles across multiple machines
 - Keeping track of which files are symlinked where
@@ -22,7 +22,7 @@ DotForge was created to solve common issues with dotfile management:
 
 ## Commands and Operations
 
-DotForge provides a clear workflow for managing your dotfiles:
+Forge provides a clear workflow for managing your dotfiles:
 
 - **Stage**: Temporarily track files for symlinking
 - **Link**: Create permanent symlinks for tracked files
@@ -32,7 +32,7 @@ DotForge provides a clear workflow for managing your dotfiles:
 
 ## Use Cases
 
-DotForge excels at managing various symlink scenarios:
+Forge excels at managing various symlink scenarios:
 
 1. **Dotfile Management**: Organize configuration files
 2. **Script Organization**: Manage executable scripts in your PATH
@@ -47,4 +47,4 @@ DotForge excels at managing various symlink scenarios:
 
 ## License
 
-DotForge is released under the MIT License. See the [LICENSE](https://github.com/jwliles/dotforge/blob/main/LICENSE) file for details.
+Forge is released under the MIT License. See the [LICENSE](https://github.com/jwliles/rust-forge/blob/main/LICENSE) file for details.

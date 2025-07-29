@@ -1,9 +1,9 @@
-site_name: DotForge
+site_name: Forge
 site_description: A powerful symlink management tool designed as a modern alternative to GNU Stow
-site_url: https://dotforge.readthedocs.io/
+site_url: https://forge.readthedocs.io/
 
-repo_name: jwliles/rust-dotforge
-repo_url: https://github.com/jwliles/rust-dotforge
+repo_name: jwliles/rust-forge
+repo_url: https://github.com/jwliles/rust-forge
 
 theme:
   name: material

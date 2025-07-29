@@ -4,7 +4,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 
 // Constants for configuration file paths
-const DEFAULT_CONFIG_DIR: &str = ".dotforge";
+const DEFAULT_CONFIG_DIR: &str = ".forge";
 const DEFAULT_PATH_FILE: &str = "default_path";
 const FILETYPES_FILE: &str = "filetypes";
 const IGNORED_PATHS_FILE: &str = "ignored_paths";
@@ -43,8 +43,8 @@ impl Config {
         
         // Initialize db_path 
         let mut db_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        db_path.push("dotforge");
-        db_path.push("dotforge.db");
+        db_path.push("forge");
+        db_path.push("forge.db");
         
         // Ensure config directory for db exists
         if let Some(parent) = db_path.parent() {
@@ -212,7 +212,7 @@ impl Config {
     pub fn read_default_path(&self) -> String {
         match fs::read_to_string(&self.default_path_file) {
             Ok(content) => content.trim().to_string(),
-            Err(_) => String::from("~/dotforge"),
+            Err(_) => String::from("~/.forge"),
         }
     }
     

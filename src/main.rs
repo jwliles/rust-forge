@@ -117,6 +117,15 @@ enum Commands {
         /// Pack scope (defaults to current working directory name)
         #[arg(short, long)]
         scope: Option<String>,
+        /// Process directories recursively (all levels)
+        #[arg(short, long)]
+        recursive: bool,
+        /// Maximum recursion depth for directories (overrides --recursive)
+        #[arg(long)]
+        depth: Option<usize>,
+        /// Show what would be packed without actually packing
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Seal the current pack into a portable archive
     Seal {
@@ -124,13 +133,42 @@ enum Commands {
         #[arg(short, long)]
         scope: Option<String>,
     },
-    /// Install a sealed pack on this system
+    /// Install a sealed pack on a new system
     Install {
         /// Path to the pack archive (.zip file)
         archive: PathBuf,
-        /// Skip conflict warnings
+        /// Skip conflict warnings and overwrite existing files
         #[arg(short, long)]
         force: bool,
+        /// Skip files that already exist (opposite of --force)
+        #[arg(long)]
+        skip_existing: bool,
+        /// Target directory for installation (defaults to current working directory)
+        #[arg(short, long)]
+        target: Option<PathBuf>,
+        /// Map home directory paths to current user's home
+        #[arg(long)]
+        map_home: bool,
+        /// Show what would be installed without actually installing
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Restore a sealed pack to original locations on current system
+    Restore {
+        /// Path to the pack archive (.zip file)
+        archive: PathBuf,
+        /// Skip conflict warnings and overwrite existing files
+        #[arg(short, long)]
+        force: bool,
+        /// Skip files that already exist (opposite of --force)
+        #[arg(long)]
+        skip_existing: bool,
+        /// Test mode: restore to current directory using filenames only (safe for testing)
+        #[arg(long)]
+        test: bool,
+        /// Show what would be restored without actually restoring
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Update files in an existing pack
     Repack {
@@ -147,6 +185,20 @@ enum Commands {
         /// Pack scope (defaults to current working directory name)
         #[arg(short, long)]
         scope: Option<String>,
+    },
+    /// Explain pack contents and installation plan
+    Explain {
+        /// Path to the pack archive (.zip file)
+        archive: PathBuf,
+        /// Show installation plan for install command (defaults to current directory)
+        #[arg(long)]
+        install: bool,
+        /// Show restoration plan for restore command  
+        #[arg(long)]
+        restore: bool,
+        /// Target directory for install plan preview
+        #[arg(short, long)]
+        target: Option<PathBuf>,
     },
 }
 
@@ -213,15 +265,15 @@ fn main() {
         }
         Some(Commands::Profile { action }) => match action {
             ProfileActions::Create { name } => {
-                println!("Note: This command is deprecated, please use 'dotforge new --profile {}' instead", name);
+                println!("Note: This command is deprecated, please use 'forge new --profile {}' instead", name);
                 cli::commands::profile::create(name);
             }
             ProfileActions::List => {
-                println!("Note: This command is deprecated, please use 'dotforge list --profiles' instead");
+                println!("Note: This command is deprecated, please use 'forge list --profiles' instead");
                 cli::commands::profile::list();
             }
             ProfileActions::Switch { name } => {
-                println!("Note: This command is deprecated, please use 'dotforge switch {}' instead", name);
+                println!("Note: This command is deprecated, please use 'forge switch {}' instead", name);
                 cli::commands::profile::switch(name);
             }
         },
@@ -230,20 +282,26 @@ fn main() {
                 cli::commands::pack::start_packing(scope);
             }
         },
-        Some(Commands::Pack { files, scope }) => {
-            cli::commands::pack::pack_files(files, scope.as_deref());
+        Some(Commands::Pack { files, scope, recursive, depth, dry_run }) => {
+            cli::commands::pack::pack_files(files, scope.as_deref(), *recursive, *depth, *dry_run);
         }
         Some(Commands::Seal { scope }) => {
             cli::commands::pack::seal_pack(scope.as_deref());
         }
-        Some(Commands::Install { archive, force }) => {
-            cli::commands::pack::install_pack(archive, *force);
+        Some(Commands::Install { archive, force, skip_existing, target, map_home, dry_run }) => {
+            cli::commands::pack::install_pack(archive, *force, *skip_existing, target.as_deref(), *map_home, *dry_run);
+        }
+        Some(Commands::Restore { archive, force, skip_existing, test, dry_run }) => {
+            cli::commands::pack::restore_pack(archive, *force, *skip_existing, *test, *dry_run);
         }
         Some(Commands::Repack { scope, files }) => {
             cli::commands::pack::repack_files(scope.as_deref(), files);
         }
         Some(Commands::Unpack { files, scope }) => {
             cli::commands::pack::unpack_files(files, scope.as_deref());
+        }
+        Some(Commands::Explain { archive, install, restore, target }) => {
+            cli::commands::pack::explain_pack(archive, *install, *restore, target.as_deref());
         }
         None => {
             if cli.interactive {
@@ -341,7 +399,7 @@ mod tests {
         
         #[test]
         fn test_cli_help() {
-            let mut cmd = Command::cargo_bin("dotforge").unwrap();
+            let mut cmd = Command::cargo_bin("forge").unwrap();
             cmd.arg("--help");
             cmd.assert().success()
                 .stdout(predicates::str::contains("Usage:"));
@@ -354,7 +412,7 @@ mod tests {
             let test_file = temp.child("test_file");
             test_file.touch().unwrap();
             
-            let mut cmd = Command::cargo_bin("dotforge").unwrap();
+            let mut cmd = Command::cargo_bin("forge").unwrap();
             cmd.arg("add").arg(test_file.path());
             
             // For now just check that the command runs without error

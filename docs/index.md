@@ -1,10 +1,10 @@
-# DotForge
+# Forge
 
 A powerful symlink management tool designed as a modern alternative to GNU Stow.
 
 ## Overview
 
-DotForge provides comprehensive symlink management using an intuitive workflow metaphor inspired by blacksmithing:
+Forge provides comprehensive symlink management using an intuitive workflow metaphor inspired by blacksmithing:
 
 - **Heat**: Stage files for symlinking
 - **Forge**: Create the actual symlinks
@@ -22,13 +22,13 @@ DotForge provides comprehensive symlink management using an intuitive workflow m
 
 ```bash
 # Install from crates.io
-cargo install dotforge
+cargo install forge-rs
 
 # Heat (stage) a file for symlinking
-dotforge heat ~/.config/nvim/init.lua
+forge heat ~/.config/nvim/init.lua
 
 # Create the symlinks for all heated files
-dotforge forge
+forge forge
 ```
 
 Check out the [Getting Started](getting-started/installation.md) section for more detailed instructions.
