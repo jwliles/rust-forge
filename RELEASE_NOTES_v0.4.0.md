@@ -28,7 +28,7 @@
 ### Medium Priority 
 4. **Publish deprecation crate:**
    ```bash
-   cd /tmp/dotforge-deprecation
+   cd /tmp/forge-deprecation
    cargo publish --token $CRATES_TOKEN
    ```
 
@@ -45,7 +45,7 @@
 - Version bumped to 0.4.0
 - Changelog updated with breaking changes
 - Release workflow fixed for correct binary name
-- Deprecation crate created at `/tmp/dotforge-deprecation/`
+- Deprecation crate created at `/tmp/forge-deprecation/`
 
 ## Current State
 - **Current branch:** `feature/pack-and-go` (needs to switch to `main` first)
@@ -55,4 +55,4 @@
 - The release workflow is fully automated once tagged
 - It will build binaries, create GitHub release, and publish to crates.io
 - Users will install with `cargo install forge-rs` but run `forge`
-- Old `dotforge` crate will show deprecation message directing to `forge-rs`
+- Old `forge` crate will show deprecation message directing to `forge-rs`

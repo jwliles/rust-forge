@@ -21,7 +21,7 @@ jobs:
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: '0.4.28'
+          mdbook-version: "0.4.28"
 
       - name: Build Documentation
         run: mdbook build docs
@@ -40,4 +40,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/book
           force_orphan: true
-          cname: docs.dotforge.dev
+          cname: docs.forge.dev

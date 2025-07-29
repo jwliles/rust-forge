@@ -10,5 +10,5 @@ pub fn get_version() -> &'static str {
 
 /// Get the path to the man page, if it exists
 pub fn get_man_page() -> Option<PathBuf> {
-    option_env!("DOTFORGE_MAN_PAGE").map(PathBuf::from)
+    option_env!("FORGE_MAN_PAGE").map(PathBuf::from)
 }

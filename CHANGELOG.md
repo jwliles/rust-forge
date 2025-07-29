@@ -16,12 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration migration between systems
 
 ### Changed
-- **BREAKING**: Crate renamed from `dotforge` to `forge-rs` 
+- **BREAKING**: Crate renamed from `forge` to `forge-rs`
 - Install with: `cargo install forge-rs` (binary remains `forge`)
 - Updated documentation and references to use consistent `forge` naming
 
 ### Migration Notes
-- Existing `dotforge` crate users: install `forge-rs` instead
+- Existing `forge` crate users: install `forge-rs` instead
 - **BREAKING**: Configuration directories changed from `.dotforge/` to `.forge/` for naming consistency
 - Users with existing repositories will need to manually rename `.dotforge/` to `.forge/` or reinitialize
 

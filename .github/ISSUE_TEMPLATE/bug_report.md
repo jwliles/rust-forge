@@ -25,7 +25,7 @@ If applicable, add the output of the command showing the error.
 
 **Environment (please complete the following information):**
 - OS: [e.g. Ubuntu 22.04, Fedora 39]
-- DotForge Version: [e.g. 0.1.0]
+- Forge Version: [e.g. 0.4.0]
 - Rust Version: [e.g. 1.70.0]
 
 **Additional context**  
