@@ -2,7 +2,7 @@
 
 A powerful symlink management tool designed as a modern alternative to GNU Stow.
 
-> **EARLY DEVELOPMENT NOTICE**: This project is in its initial development stage. Features are being actively implemented and the API may change. Early versions are published to reserve the name and share development progress.
+> THIS IS NOW ARCHIVED. PLEASE GO TO [rust-forge](https://github.com/jwliles/rust-forge) TO SEE THE CONTINUED PROJECT.
 
 ## Overview
 
