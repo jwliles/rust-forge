@@ -3,13 +3,15 @@ use std::io::{self, Write};
 /// Prompt the user for confirmation, returning true if they answer yes
 pub fn confirm(message: &str) -> bool {
     print!("{} [y/N]: ", message);
-    io::stdout().flush().unwrap();
-    
+    if let Err(_) = io::stdout().flush() {
+        eprintln!("Warning: Failed to flush stdout");
+    }
+
     let mut input = String::new();
     if io::stdin().read_line(&mut input).is_err() {
         return false;
     }
-    
+
     let input = input.trim().to_lowercase();
     input == "y" || input == "yes"
 }
@@ -18,13 +20,15 @@ pub fn confirm(message: &str) -> bool {
 pub fn confirm_with_text(message: &str, required_text: &str) -> bool {
     println!("{}", message);
     print!("Type '{}' to confirm: ", required_text);
-    io::stdout().flush().unwrap();
-    
+    if let Err(_) = io::stdout().flush() {
+        eprintln!("Warning: Failed to flush stdout");
+    }
+
     let mut input = String::new();
     if io::stdin().read_line(&mut input).is_err() {
         return false;
     }
-    
+
     input.trim() == required_text
 }
 
