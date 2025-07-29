@@ -1,6 +1,6 @@
 # Project Structure
 
-DotForge is organized into a modular structure following Rust conventions.
+Forge is organized into a modular structure following Rust conventions.
 
 ## Directory Structure
 

@@ -4,7 +4,7 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 
 // Constants for configuration file paths
-const DEFAULT_CONFIG_DIR: &str = ".dotforge";
+const DEFAULT_CONFIG_DIR: &str = ".forge";
 const DEFAULT_PATH_FILE: &str = "default_path";
 const FILETYPES_FILE: &str = "filetypes";
 const IGNORED_PATHS_FILE: &str = "ignored_paths";
@@ -43,8 +43,8 @@ impl Config {
         
         // Initialize db_path 
         let mut db_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        db_path.push("dotforge");
-        db_path.push("dotforge.db");
+        db_path.push("forge");
+        db_path.push("forge.db");
         
         // Ensure config directory for db exists
         if let Some(parent) = db_path.parent() {
@@ -212,7 +212,7 @@ impl Config {
     pub fn read_default_path(&self) -> String {
         match fs::read_to_string(&self.default_path_file) {
             Ok(content) => content.trim().to_string(),
-            Err(_) => String::from("~/dotforge"),
+            Err(_) => String::from("~/.forge"),
         }
     }
     
@@ -660,6 +660,46 @@ impl Config {
             Ok(None)
         }
     }
+    
+    // Find a dotfile by source path
+    pub fn find_dotfile_by_source(&self, source: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+        if let Some(conn) = &self.connection {
+            let source_str = source.to_string_lossy().to_string();
+            
+            let result = conn.query_row(
+                "SELECT source, target, profile, status FROM dotfiles WHERE source = ? AND active = 1",
+                [source_str],
+                |row| {
+                    let source: String = row.get(0)?;
+                    let target: String = row.get(1)?;
+                    let profile: Option<String> = row.get(2)?;
+                    let status_str: String = row.get(3)?;
+                    
+                    let status = match status_str.as_str() {
+                        "staged" => crate::dotfile::DotFileStatus::Staged,
+                        "linked" => crate::dotfile::DotFileStatus::Linked,
+                        "unlinked" => crate::dotfile::DotFileStatus::Unlinked,
+                        _ => crate::dotfile::DotFileStatus::Staged,
+                    };
+                    
+                    Ok(crate::dotfile::DotFile::with_status(
+                        PathBuf::from(source),
+                        PathBuf::from(target),
+                        profile,
+                        status,
+                    ))
+                },
+            );
+            
+            match result {
+                Ok(dotfile) => Ok(Some(dotfile)),
+                Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+                Err(e) => Err(e),
+            }
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 // Static helper functions to use when a Config instance is not available
@@ -801,4 +841,10 @@ pub fn remove_dotfile(target: &Path) -> rusqlite::Result<bool> {
 pub fn find_dotfile_by_target(target: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
     let config = get_db_connection()?;
     config.find_dotfile_by_target(target)
+}
+
+// Find a dotfile by source path
+pub fn find_dotfile_by_source(source: &Path) -> rusqlite::Result<Option<crate::dotfile::DotFile>> {
+    let config = get_db_connection()?;
+    config.find_dotfile_by_source(source)
 }

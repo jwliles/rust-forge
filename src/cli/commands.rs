@@ -5,6 +5,7 @@ use crate::utils::path_utils;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir;
 
 /// Initialize a directory as a forge managed folder
 pub fn init_command(name: Option<&str>, dir: Option<&Path>) {
@@ -52,13 +53,13 @@ pub fn init_command(name: Option<&str>, dir: Option<&Path>) {
         }
     }
 
-    // Create a .dotforge subfolder in the managed folder
-    let dotforge_dir = init_dir.join(".dotforge");
-    if !dotforge_dir.exists() {
-        match fs::create_dir_all(&dotforge_dir) {
-            Ok(_) => println!("Created .dotforge directory"),
+    // Create a .forge subfolder in the managed folder
+    let forge_dir = init_dir.join(".forge");
+    if !forge_dir.exists() {
+        match fs::create_dir_all(&forge_dir) {
+            Ok(_) => println!("Created .forge directory"),
             Err(e) => {
-                eprintln!("Failed to create .dotforge directory: {}", e);
+                eprintln!("Failed to create .forge directory: {}", e);
                 return;
             }
         }
@@ -79,18 +80,24 @@ pub fn init_command(name: Option<&str>, dir: Option<&Path>) {
 
 /// Add files to be tracked for symlinking (legacy heat command)
 pub fn heat_command(files: &[PathBuf]) {
-    stage_command(files)
+    stage_command(files, false, None)
 }
 
 /// Stage files to be tracked for symlinking
-pub fn stage_command(files: &[PathBuf]) {
-    println!("Staging files: {:?}", files);
+pub fn stage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize>) {
+    if recursive {
+        println!("Staging files and directories recursively");
+    } else if let Some(depth) = max_depth {
+        println!("Staging files and directories with max depth: {}", depth);
+    } else {
+        println!("Staging files/directories: {:?}", files);
+    }
 
     // Get the active managed folder
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -119,54 +126,185 @@ pub fn stage_command(files: &[PathBuf]) {
         }
     }
 
+    // Process each file or directory
     for file in files {
         // Normalize path
         let abs_source = path_utils::normalize(file);
 
         if !abs_source.exists() {
-            eprintln!("File does not exist: {}", abs_source.display());
+            eprintln!("Path does not exist: {}", abs_source.display());
             continue;
         }
 
-        // Extract filename for the target
-        if let Some(filename) = file.file_name() {
-            let target = forge_path.join(filename);
+        if abs_source.is_dir() {
+            // Process directory
+            if recursive || max_depth.is_some() {
+                let walkdir_depth = match max_depth {
+                    Some(depth) => depth,
+                    None => usize::MAX, // Unlimited depth for recursive mode
+                };
 
-            // Create a temporary symlink (or copy) from forge folder TO original file
-            if target.exists() {
                 println!(
-                    "Target already exists in forge folder: {}",
-                    target.display()
+                    "Processing directory: {} (max depth: {})",
+                    abs_source.display(),
+                    if walkdir_depth == usize::MAX {
+                        "unlimited".to_string()
+                    } else {
+                        walkdir_depth.to_string()
+                    }
                 );
-                continue;
-            }
 
-            // Create a symlink from forge folder TO original file (reverse of final state)
-            match symlink::create_symlink(&abs_source, &target) {
-                Ok(_) => {
-                    println!(
-                        "Created staging symlink: {} → {}",
-                        target.display(),
-                        abs_source.display()
-                    );
+                // Use walkdir to recursively process directory
+                for entry in walkdir::WalkDir::new(&abs_source)
+                    .min_depth(1) // Skip the root dir itself
+                    .max_depth(walkdir_depth)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                    .filter(|e| e.path().is_file())
+                {
+                    // Get the directory name to create proper nesting
+                    let dir_name = abs_source.file_name().unwrap_or_default();
 
-                    // Add to database as staged
-                    match config::stage_dotfile(&abs_source, &target, None) {
-                        Ok(_) => println!(
-                            "Staged file: {} (use 'link' to make permanent)",
-                            abs_source.display()
+                    // Calculate relative path from original directory
+                    let rel_path = entry
+                        .path()
+                        .strip_prefix(&abs_source)
+                        .unwrap_or_else(|_| Path::new(entry.file_name()));
+
+                    // Calculate target path in forge directory preserving subdirectories
+                    // Ensure the top-level directory name is included
+                    let target = forge_path.join(dir_name).join(rel_path);
+
+                    // Ensure target parent directory exists
+                    if let Some(parent) = target.parent() {
+                        if !parent.exists() {
+                            if let Err(e) = fs::create_dir_all(parent) {
+                                eprintln!("Failed to create directory {}: {}", parent.display(), e);
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Skip existing targets
+                    if target.exists() {
+                        println!(
+                            "Target already exists in forge folder: {}",
+                            target.display()
+                        );
+                        continue;
+                    }
+
+                    // Create a symlink from forge folder TO original file (reverse of final state)
+                    match symlink::create_symlink(entry.path(), &target) {
+                        Ok(_) => {
+                            println!(
+                                "Created staging symlink: {} → {}",
+                                target.display(),
+                                entry.path().display()
+                            );
+
+                            // Add to database as staged
+                            match config::stage_dotfile(entry.path(), &target, None) {
+                                Ok(_) => println!(
+                                    "Staged file: {} (use 'link' to make permanent)",
+                                    entry.path().display()
+                                ),
+                                Err(e) => {
+                                    eprintln!("Failed to stage {}: {}", entry.path().display(), e)
+                                }
+                            }
+                        }
+                        Err(e) => eprintln!(
+                            "Failed to create staging symlink for {}: {}",
+                            entry.path().display(),
+                            e
                         ),
-                        Err(e) => eprintln!("Failed to stage {}: {}", abs_source.display(), e),
                     }
                 }
-                Err(e) => eprintln!(
-                    "Failed to create staging symlink for {}: {}",
-                    abs_source.display(),
-                    e
-                ),
+            } else {
+                println!(
+                    "Skipping directory: {} (use --recursive or --depth to include contents)",
+                    abs_source.display()
+                );
+
+                // Even with no recursion, we still stage the directory itself
+                // Extract directory name for the target
+                if let Some(dirname) = file.file_name() {
+                    let target = forge_path.join(dirname);
+
+                    // Check if target exists
+                    if target.exists() {
+                        println!(
+                            "Target already exists in forge folder: {}",
+                            target.display()
+                        );
+                        continue;
+                    }
+
+                    // Create the directory in the forge folder
+                    if let Err(e) = fs::create_dir_all(&target) {
+                        eprintln!("Failed to create directory {}: {}", target.display(), e);
+                        continue;
+                    }
+
+                    println!("Created directory in forge folder: {}", target.display());
+
+                    // Add to database as staged directory
+                    match config::stage_dotfile(&abs_source, &target, None) {
+                        Ok(_) => println!(
+                            "Staged directory: {} (use 'link' to make permanent)",
+                            abs_source.display()
+                        ),
+                        Err(e) => {
+                            eprintln!("Failed to stage directory {}: {}", abs_source.display(), e)
+                        }
+                    }
+                } else {
+                    eprintln!("Invalid directory path: {}", file.display());
+                }
             }
         } else {
-            eprintln!("Invalid file path: {}", file.display());
+            // Process regular file
+            // Extract filename for the target
+            if let Some(filename) = file.file_name() {
+                let target = forge_path.join(filename);
+
+                // Create a temporary symlink (or copy) from forge folder TO original file
+                if target.exists() {
+                    println!(
+                        "Target already exists in forge folder: {}",
+                        target.display()
+                    );
+                    continue;
+                }
+
+                // Create a symlink from forge folder TO original file (reverse of final state)
+                match symlink::create_symlink(&abs_source, &target) {
+                    Ok(_) => {
+                        println!(
+                            "Created staging symlink: {} → {}",
+                            target.display(),
+                            abs_source.display()
+                        );
+
+                        // Add to database as staged
+                        match config::stage_dotfile(&abs_source, &target, None) {
+                            Ok(_) => println!(
+                                "Staged file: {} (use 'link' to make permanent)",
+                                abs_source.display()
+                            ),
+                            Err(e) => eprintln!("Failed to stage {}: {}", abs_source.display(), e),
+                        }
+                    }
+                    Err(e) => eprintln!(
+                        "Failed to create staging symlink for {}: {}",
+                        abs_source.display(),
+                        e
+                    ),
+                }
+            } else {
+                eprintln!("Invalid file path: {}", file.display());
+            }
         }
     }
 
@@ -186,7 +324,7 @@ pub fn link_command(files: &[PathBuf]) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -217,19 +355,93 @@ pub fn link_command(files: &[PathBuf]) {
         for file in files {
             let abs_path = path_utils::normalize(file);
 
-            match config::find_dotfile_by_target(&abs_path) {
-                Ok(Some(df)) => {
-                    if df.is_staged() {
-                        result.push(df);
-                    } else {
-                        println!("File already linked: {}", abs_path.display());
+            // Check if it's a specific file or a directory name
+            if abs_path.is_dir() {
+                // If it's a directory, find all staged files under that directory
+                match config::get_staged_dotfiles(None) {
+                    Ok(all_dotfiles) => {
+                        for df in all_dotfiles {
+                            // Check if this file is within the specified directory
+                            if df.is_staged() && df.source.starts_with(&abs_path) {
+                                result.push(df);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error fetching staged files: {}", e);
                     }
                 }
-                Ok(None) => {
-                    eprintln!("File not found in staging: {}", abs_path.display());
+
+                // Also check if the directory itself is staged
+                match config::find_dotfile_by_source(&abs_path) {
+                    Ok(Some(df)) => {
+                        if df.is_staged() {
+                            result.push(df);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(e) => {
+                        eprintln!("Error checking directory {}: {}", abs_path.display(), e);
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Error checking file {}: {}", abs_path.display(), e);
+
+                // If using a relative path or just a directory name
+                if !abs_path.is_absolute() {
+                    let dir_name = file.file_name().unwrap_or_default();
+                    let forge_dir_path = forge_path.join(dir_name);
+
+                    // Check if dotfiles are in the forge directory with this name
+                    match config::get_staged_dotfiles(None) {
+                        Ok(all_dotfiles) => {
+                            for df in all_dotfiles {
+                                if df.is_staged() && df.target.starts_with(&forge_dir_path) {
+                                    result.push(df);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("Error fetching staged files: {}", e);
+                        }
+                    }
+                }
+
+                if result.is_empty() {
+                    eprintln!(
+                        "No staged files found for directory: {}",
+                        abs_path.display()
+                    );
+                }
+            } else {
+                // Original behavior for specific files
+                match config::find_dotfile_by_target(&abs_path) {
+                    Ok(Some(df)) => {
+                        if df.is_staged() {
+                            result.push(df);
+                        } else {
+                            println!("File already linked: {}", abs_path.display());
+                        }
+                    }
+                    Ok(None) => {
+                        // Try looking it up by source instead
+                        match config::find_dotfile_by_source(&abs_path) {
+                            Ok(Some(df)) => {
+                                if df.is_staged() {
+                                    result.push(df);
+                                } else {
+                                    println!("File already linked: {}", abs_path.display());
+                                }
+                            }
+                            Ok(None) => {
+                                eprintln!("File not found in staging: {}", abs_path.display());
+                            }
+                            Err(e) => {
+                                eprintln!("Error checking file {}: {}", abs_path.display(), e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error checking file {}: {}", abs_path.display(), e);
+                    }
                 }
             }
         }
@@ -247,15 +459,52 @@ pub fn link_command(files: &[PathBuf]) {
 
     // Link each dotfile
     for dotfile in dotfiles {
-        // First remove the staging symlink
-        if let Err(e) = fs::remove_file(&dotfile.target) {
-            eprintln!(
-                "Failed to remove staging symlink {}: {}",
-                dotfile.target.display(),
-                e
-            );
-            error_count += 1;
+        // Check if source is a directory
+        if dotfile.source.is_dir() {
+            // For directories, we have a different process
+            println!("Processing directory: {}", dotfile.source.display());
+
+            // We can update the database status to linked but don't move the directory itself
+            if let Err(e) = config::link_dotfile(&dotfile.source, &dotfile.target) {
+                eprintln!("Failed to update directory tracking status: {}", e);
+                error_count += 1;
+            } else {
+                success_count += 1;
+            }
+
+            // Continue to the next item
             continue;
+        }
+
+        // Process files - first check if target is a file or symlink (not a dir)
+        if dotfile.target.is_file() || symlink::is_symlink(&dotfile.target) {
+            // Remove the staging symlink
+            if let Err(e) = fs::remove_file(&dotfile.target) {
+                eprintln!(
+                    "Failed to remove staging symlink {}: {}",
+                    dotfile.target.display(),
+                    e
+                );
+                error_count += 1;
+                continue;
+            }
+        } else if dotfile.target.is_dir() {
+            // For directory targets, just skip removal
+            println!(
+                "Target is a directory, skipping removal: {}",
+                dotfile.target.display()
+            );
+        }
+
+        // Ensure target parent directory exists
+        if let Some(parent) = dotfile.target.parent() {
+            if !parent.exists() {
+                if let Err(e) = fs::create_dir_all(parent) {
+                    eprintln!("Failed to create directory {}: {}", parent.display(), e);
+                    error_count += 1;
+                    continue;
+                }
+            }
         }
 
         // Move the original file to the forge directory
@@ -350,7 +599,7 @@ pub fn unlink_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -477,7 +726,7 @@ pub fn remove_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -589,7 +838,7 @@ pub fn delete_command(files: &[PathBuf], skip_confirm: bool) {
     let (folder_name, forge_path) = match config::get_active_managed_folder() {
         Ok(Some((name, path))) => (name, path),
         Ok(None) => {
-            eprintln!("No managed folders found. Please run 'dotforge init' first.");
+            eprintln!("No managed folders found. Please run 'forge init' first.");
             return;
         }
         Err(e) => {
@@ -712,12 +961,14 @@ pub fn delete_command(files: &[PathBuf], skip_confirm: bool) {
     }
 }
 
+pub mod pack;
+
 pub mod profile {
     use crate::config;
     use std::fs;
     use std::path::PathBuf;
 
-    const PROFILES_DIR: &str = ".dotforge/profiles";
+    const PROFILES_DIR: &str = ".forge/profiles";
 
     /// Create a new profile
     pub fn create(name: &str) {

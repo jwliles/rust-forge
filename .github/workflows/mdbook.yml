@@ -1,0 +1,43 @@
+name: MDBook Documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: '0.4.28'
+
+      - name: Build Documentation
+        run: mdbook build docs
+
+      - name: Verify Documentation
+        run: |
+          echo "Checking generated documentation..."
+          echo "Main directory:"
+          ls -la docs/book/
+          echo "Index file header:"
+          cat docs/book/index.html | head -30
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          force_orphan: true
+          cname: docs.dotforge.dev

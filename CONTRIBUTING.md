@@ -1,10 +1,10 @@
-# Contributing to DotForge
+# Contributing to Forge
 
-Thank you for your interest in contributing to DotForge! This document provides guidelines and workflows for contributing to the project.
+Thank you for your interest in contributing to Forge! This document provides guidelines and workflows for contributing to the project.
 
 ## Git Workflow
 
-DotForge uses a modified GitFlow workflow:
+Forge uses a modified GitFlow workflow:
 
 ### Main Branches
 
@@ -97,4 +97,4 @@ Documentation-only updates (README, docs/, etc.) don't require a version bump an
 4. Request review from a maintainer
 5. Address any review feedback
 
-Thank you for contributing to DotForge!
+Thank you for contributing to Forge!

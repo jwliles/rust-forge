@@ -1,11 +1,29 @@
 # Changelog
 
-All notable changes to DotForge will be documented in this file.
+All notable changes to Forge will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.0] - 2025-06-23
+
+### Added
+- Pack-and-go feature for creating portable configuration bundles
+- Ability to export and import complete configuration setups
+- Bundle compression and metadata tracking
+- Configuration migration between systems
+
+### Changed
+- **BREAKING**: Crate renamed from `dotforge` to `forge-rs` 
+- Install with: `cargo install forge-rs` (binary remains `forge`)
+- Updated documentation and references to use consistent `forge` naming
+
+### Migration Notes
+- Existing `dotforge` crate users: install `forge-rs` instead
+- **BREAKING**: Configuration directories changed from `.dotforge/` to `.forge/` for naming consistency
+- Users with existing repositories will need to manually rename `.dotforge/` to `.forge/` or reinitialize
 
 ## [0.3.2] - 2025-04-24
 
@@ -70,9 +88,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command structure (heat, forge, cool, profile)
 - Basic symlink creation tests
 
-[Unreleased]: https://github.com/jwliles/rust-dotforge/compare/v0.3.2...HEAD
-[0.3.2]: https://github.com/jwliles/rust-dotforge/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/jwliles/rust-dotforge/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/jwliles/rust-dotforge/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/jwliles/rust-dotforge/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/jwliles/rust-dotforge/releases/tag/v0.1.0
+[Unreleased]: https://github.com/jwliles/rust-forge/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/jwliles/rust-forge/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/jwliles/rust-forge/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/jwliles/rust-forge/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/jwliles/rust-forge/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/jwliles/rust-forge/releases/tag/v0.1.0
