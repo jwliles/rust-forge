@@ -28,8 +28,13 @@ impl DotFile {
             status: DotFileStatus::Staged,
         }
     }
-    
-    pub fn with_status(source: PathBuf, target: PathBuf, profile: Option<String>, status: DotFileStatus) -> Self {
+
+    pub fn with_status(
+        source: PathBuf,
+        target: PathBuf,
+        profile: Option<String>,
+        status: DotFileStatus,
+    ) -> Self {
         Self {
             source,
             target,
@@ -37,19 +42,19 @@ impl DotFile {
             status,
         }
     }
-    
+
     pub fn set_status(&mut self, status: DotFileStatus) {
         self.status = status;
     }
-    
+
     pub fn is_staged(&self) -> bool {
         self.status == DotFileStatus::Staged
     }
-    
+
     pub fn is_linked(&self) -> bool {
         self.status == DotFileStatus::Linked
     }
-    
+
     pub fn is_unlinked(&self) -> bool {
         self.status == DotFileStatus::Unlinked
     }
