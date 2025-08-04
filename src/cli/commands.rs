@@ -459,8 +459,12 @@ pub fn link_command(files: &[PathBuf]) {
 
     // Link each dotfile
     for dotfile in dotfiles {
-        // Check if source is a directory
+        println!("---");
+        println!("Processing dotfile:");
+        println!("  Source: {}", dotfile.source.display());
+        println!("  Target: {}", dotfile.target.display());
         if dotfile.source.is_dir() {
+            println!("  Type: Directory");
             // For directories, we have a different process
             println!("Processing directory: {}", dotfile.source.display());
 
@@ -469,16 +473,22 @@ pub fn link_command(files: &[PathBuf]) {
                 eprintln!("Failed to update directory tracking status: {}", e);
                 error_count += 1;
             } else {
+                println!("Directory tracking status updated to linked.");
                 success_count += 1;
             }
 
             // Continue to the next item
             continue;
+        } else {
+            println!("  Type: File");
         }
 
         // Process files - first check if target is a file or symlink (not a dir)
         if dotfile.target.is_file() || symlink::is_symlink(&dotfile.target) {
-            // Remove the staging symlink
+            println!(
+                "  Target is a file or symlink, removing staging symlink: {}",
+                dotfile.target.display()
+            );
             if let Err(e) = fs::remove_file(&dotfile.target) {
                 eprintln!(
                     "Failed to remove staging symlink {}: {}",
@@ -487,11 +497,13 @@ pub fn link_command(files: &[PathBuf]) {
                 );
                 error_count += 1;
                 continue;
+            } else {
+                println!("  Removed staging symlink: {}", dotfile.target.display());
             }
         } else if dotfile.target.is_dir() {
             // For directory targets, just skip removal
             println!(
-                "Target is a directory, skipping removal: {}",
+                "  Target is a directory, skipping removal: {}",
                 dotfile.target.display()
             );
         }
@@ -499,6 +511,7 @@ pub fn link_command(files: &[PathBuf]) {
         // Ensure target parent directory exists
         if let Some(parent) = dotfile.target.parent() {
             if !parent.exists() {
+                println!("  Creating parent directory: {}", parent.display());
                 if let Err(e) = fs::create_dir_all(parent) {
                     eprintln!("Failed to create directory {}: {}", parent.display(), e);
                     error_count += 1;
@@ -508,29 +521,79 @@ pub fn link_command(files: &[PathBuf]) {
         }
 
         // Move the original file to the forge directory
+        println!(
+            "  Copying file from {} to {}",
+            dotfile.source.display(),
+            dotfile.target.display()
+        );
+        // If the target file in the forge directory exists, back it up before copying
+        if dotfile.target.exists() {
+            let backup_path = dotfile.target.with_extension("bak");
+            println!(
+                "  Target file {} exists, backing up to {}",
+                dotfile.target.display(),
+                backup_path.display()
+            );
+            if let Err(e) = fs::rename(&dotfile.target, &backup_path) {
+                eprintln!(
+                    "Failed to back up existing target file: {}: {}",
+                    dotfile.target.display(),
+                    e
+                );
+                error_count += 1;
+                continue;
+            }
+        }
         match fs::copy(&dotfile.source, &dotfile.target) {
             Ok(_) => {
+                println!("  File copied successfully.");
+                // Step 1: Validate copy succeeded (file exists at target and matches size)
+                let src_metadata = fs::metadata(&dotfile.source);
+                let tgt_metadata = fs::metadata(&dotfile.target);
+                let copy_valid = match (&src_metadata, &tgt_metadata) {
+                    (Ok(src), Ok(tgt)) => src.len() == tgt.len(),
+                    _ => false,
+                };
+                if !copy_valid {
+                    eprintln!(
+                        "  Copy validation failed: source and target file sizes do not match or metadata error."
+                    );
+                    error_count += 1;
+                    continue;
+                }
                 // Create symlink from original location to forge directory FIRST
+                println!(
+                    "  Creating symlink from {} to {}",
+                    dotfile.source.display(),
+                    dotfile.target.display()
+                );
+                // Remove the original file only after confirming the copy
+                if dotfile.source.exists() {
+                    println!("  Removing original file: {}", dotfile.source.display());
+                    if let Err(e) = fs::remove_file(&dotfile.source) {
+                        eprintln!(
+                            "Failed to remove original file after copy: {}: {}",
+                            dotfile.source.display(),
+                            e
+                        );
+                        error_count += 1;
+                        continue;
+                    } else {
+                        println!("  Original file removed.");
+                    }
+                }
+                // Final check: if the original file still exists, abort before symlinking
+                if dotfile.source.exists() {
+                    eprintln!(
+                        "  ERROR: Original file still exists at symlink location ({}), cannot create symlink. File removal may have failed.",
+                        dotfile.source.display()
+                    );
+                    error_count += 1;
+                    continue;
+                }
                 match symlink::create_symlink(&dotfile.target, &dotfile.source) {
                     Ok(_) => {
-                        // Only remove the original file AFTER symlink is successfully created
-                        if let Err(e) = fs::remove_file(&dotfile.source) {
-                            eprintln!(
-                                "Failed to remove original file {}: {}",
-                                dotfile.source.display(),
-                                e
-                            );
-                            // Try to remove the symlink we just created to maintain consistency
-                            if let Err(cleanup_err) = fs::remove_file(&dotfile.source) {
-                                eprintln!(
-                                    "Failed to cleanup symlink during error recovery: {}",
-                                    cleanup_err
-                                );
-                            }
-                            error_count += 1;
-                            continue;
-                        }
-
+                        println!("  Symlink created successfully.");
                         println!(
                             "Created symlink: {} → {}",
                             dotfile.source.display(),
@@ -540,6 +603,8 @@ pub fn link_command(files: &[PathBuf]) {
                         // Update database status to linked
                         if let Err(e) = config::link_dotfile(&dotfile.source, &dotfile.target) {
                             eprintln!("Failed to update database: {}", e);
+                        } else {
+                            println!("  Database status updated to linked.");
                         }
 
                         success_count += 1;
@@ -1095,4 +1160,192 @@ pub mod profile {
             Err(e) => println!("Error switching to profile '{}': {}", name, e),
         }
     }
+}
+
+/// Unstage (deactivate) staged files by target path
+
+/// Unstage (deactivate) staged files by target path, with optional recursive support
+pub fn unstage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize>) {
+    let staged_dotfiles = match config::get_staged_dotfiles(None) {
+        Ok(df) => df,
+        Err(e) => {
+            eprintln!("Failed to fetch staged files: {}", e);
+            return;
+        }
+    };
+    if files.is_empty() {
+        // Unstage all staged files in a single batch operation
+        let targets: Vec<_> = staged_dotfiles.iter().map(|df| df.target.clone()).collect();
+        match config::deactivate_dotfiles(&targets) {
+            Ok(count) => {
+                println!("Unstaged {} files.", count);
+                // Remove the staging symlinks in the forge directory
+                for dotfile in &staged_dotfiles {
+                    if let Err(e) = std::fs::remove_file(&dotfile.target) {
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            eprintln!(
+                                "Failed to remove staging symlink {}: {}",
+                                dotfile.target.display(),
+                                e
+                            );
+                        }
+                    } else {
+                        println!("Removed staging symlink: {}", dotfile.target.display());
+                    }
+                }
+            }
+            Err(e) => eprintln!("Failed to unstage files: {}", e),
+        }
+        return;
+    }
+    for file in files {
+        let abs_path = path_utils::normalize(file);
+        if abs_path.is_dir() && recursive {
+            let walkdir_depth = max_depth.unwrap_or(usize::MAX);
+            for entry in walkdir::WalkDir::new(&abs_path)
+                .min_depth(1)
+                .max_depth(walkdir_depth)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().is_file())
+            {
+                let entry_path = entry.path();
+                for dotfile in &staged_dotfiles {
+                    if dotfile.source == entry_path {
+                        match config::deactivate_dotfile(&dotfile.target) {
+                            Ok(true) => println!("Unstaged: {}", dotfile.target.display()),
+                            Ok(false) => println!(
+                                "File not found or already inactive: {}",
+                                dotfile.target.display()
+                            ),
+                            Err(e) => {
+                                println!("Failed to unstage {}: {}", dotfile.target.display(), e)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Unstage the file directly
+            for dotfile in &staged_dotfiles {
+                if dotfile.source == abs_path || dotfile.target == abs_path {
+                    match config::deactivate_dotfile(&dotfile.target) {
+                        Ok(true) => println!("Unstaged: {}", dotfile.target.display()),
+                        Ok(false) => println!(
+                            "File not found or already inactive: {}",
+                            dotfile.target.display()
+                        ),
+                        Err(e) => println!("Failed to unstage {}: {}", dotfile.target.display(), e),
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Purge all dotfile records (staged or managed) and forge files for a specified folder
+pub fn purge_command(folder: &Path, recursive: bool) {
+    let abs_folder = path_utils::normalize(folder);
+    println!(
+        "Purging all dotfile records and forge files for folder: {}",
+        abs_folder.display()
+    );
+    // Remove from database
+    match crate::config::purge_dotfiles_in_folder(&abs_folder, recursive) {
+        Ok(count) => println!("Purged {} database records.", count),
+        Err(e) => eprintln!("Failed to purge database records: {}", e),
+    }
+    // Remove files in forge directory
+    // (Optional: implement if desired, or prompt user)
+}
+
+/// Purge all dotfile records and managed files for a specified folder, restoring originals to prevent data loss
+pub fn purge_command_safe(folder: &Path, recursive: bool) {
+    let abs_folder = path_utils::normalize(folder);
+    println!(
+        "Safely purging all dotfile records and managed files for folder: {}",
+        abs_folder.display()
+    );
+    // Get all dotfiles (staged or linked) under the folder
+    let dotfiles = match crate::config::get_dotfiles_in_folder(&abs_folder, recursive) {
+        Ok(df) => df,
+        Err(e) => {
+            eprintln!("Failed to fetch dotfiles: {}", e);
+            return;
+        }
+    };
+    for dotfile in &dotfiles {
+        // If the original location is a symlink to the managed file, restore the real file
+        if dotfile.source.is_symlink() {
+            match std::fs::read_link(&dotfile.source) {
+                Ok(target_path) if target_path == dotfile.target => {
+                    // Remove the symlink at the original location
+                    if let Err(e) = std::fs::remove_file(&dotfile.source) {
+                        eprintln!(
+                            "Failed to remove symlink {}: {}",
+                            dotfile.source.display(),
+                            e
+                        );
+                        continue;
+                    }
+                    // Copy the managed file back to the original location
+                    if let Err(e) = std::fs::copy(&dotfile.target, &dotfile.source) {
+                        eprintln!(
+                            "Failed to restore file from managed folder: {} -> {}: {}",
+                            dotfile.target.display(),
+                            dotfile.source.display(),
+                            e
+                        );
+                        continue;
+                    }
+                    println!("Restored and removed symlink: {}", dotfile.source.display());
+                }
+                _ => {}
+            }
+        }
+        // Remove the managed file
+        if let Some(name) = dotfile.target.file_name().and_then(|n| n.to_str()) {
+            if name.starts_with('.') || name == ".forge" {
+                continue;
+            }
+        }
+        if let Err(e) = std::fs::remove_file(&dotfile.target) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                eprintln!(
+                    "Failed to remove managed file {}: {}",
+                    dotfile.target.display(),
+                    e
+                );
+            }
+        } else {
+            println!("Removed managed file: {}", dotfile.target.display());
+        }
+    }
+    // Purge from database
+    match crate::config::purge_dotfiles_in_folder(&abs_folder, recursive) {
+        Ok(count) => println!("Purged {} database records.", count),
+        Err(e) => eprintln!("Failed to purge database records: {}", e),
+    }
+    // Recursively remove all empty directories under the managed folder
+    fn remove_empty_dirs(path: &std::path::Path) {
+        if path.is_dir() {
+            let entries = match std::fs::read_dir(path) {
+                Ok(e) => e,
+                Err(_) => return,
+            };
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let p = entry.path();
+                    remove_empty_dirs(&p);
+                }
+            }
+            // Try to remove the directory (will only succeed if empty)
+            let _ = std::fs::remove_dir(path);
+        }
+    }
+    remove_empty_dirs(&abs_folder);
+    println!(
+        "All files and directories under {} have been purged.",
+        abs_folder.display()
+    );
 }

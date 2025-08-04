@@ -2,11 +2,14 @@
 
 A powerful symlink management tool designed as a modern alternative to GNU Stow.
 
-> THIS IS NOW ARCHIVED. PLEASE GO TO [rust-forge](https://github.com/jwliles/rust-forge) TO SEE THE CONTINUED PROJECT.
-
 ## Overview
 
-Forge provides comprehensive symlink management with clear, intuitive commands:
+Forge provides comprehensive symlink management with clear, intuitive commands.
+
+## Global Flags
+
+- **-v, --verbose**: Enable verbose output for debugging and troubleshooting. When set, Forge will print additional details about operations, errors, and internal state to help diagnose issues.
+- **-I, --interactive**: Use interactive mode (TUI, under development).
 
 - **Stage**: Temporarily track files for symlinking
 - **Link**: Create permanent symlinks for tracked files
@@ -325,6 +328,42 @@ This project follows semantic versioning (SemVer) for crates.io releases:
 - The `docs` branch is used for documentation development
 - Feature development occurs on dedicated `feature/*` branches
 - Version bumps occur on the `main` branch before publication to crates.io
+
+## Troubleshooting and Error Handling
+
+Forge is designed to handle errors gracefully and report issues to the user via standard error (stderr) and exit codes.
+
+### How Errors Are Reported
+
+- **Exit Codes**: Forge exits with status `0` on success, and a nonzero code (`>0`) if an error occurs.
+- **Error Messages**: Most errors are printed to stderr with a message describing the failure. Some errors may include additional context, but not all error messages are highly detailed.
+
+### Common Error Scenarios
+
+- **"Failed to create directory"**: The target directory could not be created, possibly due to permissions or a race condition if multiple processes are running Forge simultaneously.
+- **"No managed folders found. Please run 'forge init' first."**: You must initialize a managed folder before using most commands.
+- **"Hash mismatch"**: Indicates a file integrity check failed during pack or restore operations.
+- **"File does not exist"**: The specified file or directory was not found at the given path.
+
+### Troubleshooting Steps
+
+1. **Check Permissions**: Ensure you have read/write permissions for all involved files and directories.
+2. **Check Paths**: Verify that all file and directory paths are correct and exist.
+3. **Run with Verbose Output**: Use `-v` or `--verbose` flags for more detailed output. This will print additional information about what Forge is doing, including file operations, error context, and internal state.
+4. **Check for Concurrent Operations**: Avoid running multiple Forge commands in parallel, as this may cause race conditions in directory creation.
+5. **Database Issues**: If you encounter inconsistent state or missing data, it may be due to a failed operation. Currently, database operations are not transactional; rerun the command or re-initialize if needed.
+
+### Known Limitations
+
+- **Race Conditions**: Directory creation is not atomic; rare failures may occur if multiple Forge processes run concurrently.
+- **Database Transactions**: Some operations do not use database transactions, which could lead to inconsistent state if interrupted.
+- **Error Context**: Some error messages may lack detailed context. If you encounter a cryptic error, please report it.
+
+### Reporting Bugs
+
+If you encounter a bug or unexpected behavior:
+- Check [BUGS.md](BUGS.md) for known issues and status.
+- Report new bugs or request help at: https://github.com/jwliles/rust-forge/issues
 
 ## Contributing
 

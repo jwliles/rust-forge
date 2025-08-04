@@ -8,7 +8,14 @@ forge - a powerful symlink management tool with pack-and-go configuration bundle
 
 ## SYNOPSIS
 
-**forge** [**-I**|**--interactive**] [**-h**|**--help**] [**-V**|**--version**] *COMMAND* [*COMMAND_OPTIONS*] [*ARGS*...]
+**forge** [**-v**|**--verbose**] [**-I**|**--interactive**] [**-h**|**--help**] [**-V**|**--version**] *COMMAND* [*COMMAND_OPTIONS*] [*ARGS*...]
+
+### Global Flags
+
+- **-v, --verbose**: Enable verbose output for debugging and troubleshooting. When set, Forge prints additional details about operations, errors, and internal state to help diagnose issues.
+- **-I, --interactive**: Use interactive mode (TUI, under development).
+- **-h, --help**: Print help information.
+- **-V, --version**: Print version information.
 
 ## DESCRIPTION
 
@@ -109,6 +116,9 @@ Update files in an existing pack staging area. If *FILES* are specified, repacks
 Remove files from pack staging area. Removes specified files from pack directory and removes entries from manifest.toml. Does not affect files in their original locations. Pack remains active for additional files or sealing.
 
 ## OPTIONS
+
+#### **-v**, **--verbose**
+Enable verbose output for debugging and troubleshooting. Prints additional details about operations, errors, and internal state.
 
 #### **-I**, **--interactive**
 Use interactive mode (under development)

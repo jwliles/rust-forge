@@ -1,0 +1,147 @@
+<svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #2b2d3a; }
+      .panel-bg { fill: #1e1e1e; stroke: #404040; stroke-width: 1; }
+      .header-bg { fill: #3c3c3c; }
+      .text-main { fill: #d4d4d4; font-family: 'Courier New', monospace; font-size: 11px; }
+      .text-title { fill: #569cd6; font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold; }
+      .text-header { fill: #f4a261; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; }
+      .text-path { fill: #808080; font-family: 'Courier New', monospace; font-size: 10px; }
+      .text-staged { fill: #f9ca24; font-family: 'Courier New', monospace; font-size: 11px; }
+      .text-linked { fill: #6c5ce7; font-family: 'Courier New', monospace; font-size: 11px; }
+      .text-conflict { fill: #e74c3c; font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold; }
+      .text-directory { fill: #4ecdc4; font-family: 'Courier New', monospace; font-size: 11px; }
+      .text-comment { fill: #6a9955; font-family: 'Courier New', monospace; font-size: 10px; font-style: italic; }
+      .text-keyword { fill: #569cd6; font-family: 'Courier New', monospace; font-size: 10px; }
+      .text-string { fill: #ce9178; font-family: 'Courier New', monospace; font-size: 10px; }
+      .detail-bg { fill: #252526; }
+      .code-bg { fill: #1e1e1e; }
+      .border-accent { stroke: #f4a261; stroke-width: 3; fill: none; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="900" height="600" class="bg"></rect>
+  
+  <!-- Header -->
+  <rect x="10" y="10" width="880" height="30" class="header-bg"></rect>
+  <text x="450" y="28" text-anchor="middle" class="text-header">FORGE: Symlink Management Tool</text>
+  
+  <!-- File System Panel -->
+  <rect x="10" y="50" width="215" height="300" class="panel-bg"></rect>
+  <text x="20" y="68" class="text-title">File System</text>
+  <line x1="20" y1="72" x2="215" y2="72" stroke="#404040"></line>
+  
+  <text x="20" y="88" class="text-directory">~/projects</text>
+  <text x="30" y="103" class="text-directory">dotfiles/</text>
+  <text x="30" y="118" class="text-directory">scripts/</text>
+  <text x="30" y="133" class="text-main">.bashrc</text>
+  <text x="30" y="148" class="text-main">.zshrc</text>
+  <text x="30" y="163" class="text-main">.gitconfig</text>
+  <text x="30" y="178" class="text-main">README.md</text>
+  <text x="30" y="193" class="text-main">.tmux.conf</text>
+  <text x="30" y="208" class="text-main">.vimrc</text>
+  
+  <!-- Forge Inventory Panel -->
+  <rect x="235" y="50" width="215" height="300" class="panel-bg"></rect>
+  <text x="245" y="68" class="text-title">Forge Inventory (Tracked)</text>
+  <line x1="245" y1="72" x2="440" y2="72" stroke="#404040"></line>
+  
+  <text x="245" y="88" class="text-linked">.bashrc</text>
+  <text x="245" y="98" class="text-path">→ ~/dotfiles/.bashrc</text>
+  
+  <text x="245" y="118" class="text-linked">.vimrc</text>
+  <text x="245" y="128" class="text-path">→ ~/dotfiles/.vimrc</text>
+  
+  <text x="245" y="148" class="text-linked">.tmux.conf</text>
+  <text x="245" y="158" class="text-path">→ ~/dotfiles/.tmux.conf</text>
+  
+  <text x="245" y="178" class="text-conflict">.gitconfig</text>
+  <text x="245" y="188" class="text-conflict">CONFLICT</text>
+  
+  <text x="245" y="208" class="text-linked">.config/nvim/</text>
+  <text x="245" y="218" class="text-path">→ ~/dotfiles/nvim/</text>
+  
+  <!-- Staging Area Panel -->
+  <rect x="460" y="50" width="215" height="300" class="panel-bg"></rect>
+  <text x="470" y="68" class="text-title">Staging Area (Staged)</text>
+  <line x1="470" y1="72" x2="665" y2="72" stroke="#404040"></line>
+  
+  <text x="470" y="88" class="text-staged">.zshrc</text>
+  <text x="470" y="98" class="text-path">→ ~/dotfiles/.zshrc</text>
+  
+  <text x="470" y="118" class="text-staged">.vim/colors/</text>
+  <text x="470" y="128" class="text-path">→ ~/dotfiles/.vim/colors/</text>
+  
+  <text x="470" y="148" class="text-staged">.config/alacritty/</text>
+  <text x="470" y="158" class="text-path">→ ~/dotfiles/alacritty/</text>
+  
+  <!-- File Details Panel -->
+  <rect x="685" y="50" width="205" height="300" class="panel-bg"></rect>
+  <text x="695" y="68" class="text-title">File Details</text>
+  <line x1="695" y1="72" x2="880" y2="72" stroke="#404040"></line>
+  
+  <text x="695" y="88" class="text-header">.bashrc (Linked)</text>
+  
+  <text x="695" y="108" class="text-main">Full path: /home/user/projects/.bashrc</text>
+  <text x="695" y="123" class="text-main">Target: /home/user/dotfiles/.bashrc</text>
+  <text x="695" y="138" class="text-main">Size: 1.2 KB</text>
+  <text x="695" y="153" class="text-main">Modified: 2025-03-15 12:45</text>
+  
+  <!-- Code snippet area -->
+  <rect x="695" y="168" width="185" height="120" class="code-bg"></rect>
+  <line x1="692" y1="168" x2="692" y2="288" class="border-accent"></line>
+  
+  <text x="700" y="183" class="text-comment"># Bash Configuration</text>
+  <text x="700" y="198" class="text-keyword">export</text>
+  <text x="740" y="198" class="text-string">PATH="$HOME/bin:$PATH"</text>
+  <text x="700" y="213" class="text-keyword">alias</text>
+  <text x="730" y="213" class="text-main">ll =</text>
+  <text x="760" y="213" class="text-string">"ls -la"</text>
+  <text x="700" y="228" class="text-keyword">alias</text>
+  <text x="730" y="228" class="text-main">gst =</text>
+  <text x="770" y="228" class="text-string">"git status"</text>
+  
+  <text x="700" y="253" class="text-comment"># forge add /home/user/projects/.bashrc</text>
+  <text x="700" y="268" class="text-comment">Successfully linked file.</text>
+  
+  <!-- Legend/Footer -->
+  <rect x="10" y="360" width="880" height="80" class="panel-bg"></rect>
+  
+  <!-- Legend items -->
+  <rect x="20" y="375" width="12" height="12" fill="#6c5ce7"></rect>
+  <text x="38" y="385" class="text-main">Linked File</text>
+  
+  <rect x="120" y="375" width="12" height="12" fill="#f9ca24"></rect>
+  <text x="138" y="385" class="text-main">Staged File</text>
+  
+  <rect x="220" y="375" width="12" height="12" fill="#d4d4d4"></rect>
+  <text x="238" y="385" class="text-main">Regular File</text>
+  
+  <rect x="320" y="375" width="12" height="12" fill="#4ecdc4"></rect>
+  <text x="338" y="385" class="text-main">Directory</text>
+  
+  <rect x="420" y="375" width="12" height="12" fill="#e74c3c"></rect>
+  <text x="438" y="385" class="text-main">Conflict</text>
+  
+  <!-- Command hints -->
+  <text x="580" y="385" class="text-path">[space] Stage/Unstage    [f]orge File    [Tab] Next Panel</text>
+  <text x="580" y="400" class="text-path">[/]Search    [c]ool (Un)forge    [q]Quit</text>
+  
+  <!-- Status indicators -->
+  <rect x="10" y="450" width="880" height="140" class="panel-bg"></rect>
+  <text x="20" y="468" class="text-title">Forge Operations</text>
+  <line x1="20" y1="472" x2="880" y2="472" stroke="#404040"></line>
+  
+  <text x="20" y="488" class="text-main">Current Profile: default</text>
+  <text x="20" y="503" class="text-main">Forge Directory: ~/dotfiles</text>
+  <text x="20" y="518" class="text-main">Files Tracked: 4 linked, 3 staged</text>
+  
+  <text x="20" y="543" class="text-comment"># Example Forge Commands:</text>
+  <text x="20" y="558" class="text-keyword">forge stage</text>
+  <text x="100" y="558" class="text-main">~/.config/nvim/init.lua</text>
+  <text x="300" y="558" class="text-comment"># Stage file for linking</text>
+  <text x="20" y="573" class="text-keyword">forge link</text>
+  <text x="300" y="573" class="text-comment"># Create permanent symlinks</text>
+</svg>
