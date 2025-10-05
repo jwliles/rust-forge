@@ -24,9 +24,24 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        let config_dir = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(DEFAULT_CONFIG_DIR);
+        // Check for test environment variable to isolate database
+        let db_path = if let Ok(test_db) = std::env::var("FORGE_TEST_DB") {
+            PathBuf::from(test_db)
+        } else {
+            let mut db_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+            db_path.push("forge");
+            db_path.push("forge.db");
+            db_path
+        };
+
+        // Check for test config directory override
+        let config_dir = if let Ok(test_config) = std::env::var("FORGE_TEST_CONFIG_DIR") {
+            PathBuf::from(test_config)
+        } else {
+            dirs::home_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join(DEFAULT_CONFIG_DIR)
+        };
 
         // Create config directory if it doesn't exist
         if !config_dir.exists() {
@@ -41,12 +56,43 @@ impl Config {
         let ignored_paths_file = config_dir.join(IGNORED_PATHS_FILE);
         let managed_folders_file = config_dir.join(MANAGED_FOLDERS_FILE);
 
-        // Initialize db_path
-        let mut db_path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        db_path.push("forge");
-        db_path.push("forge.db");
-
         // Ensure config directory for db exists
+        if let Some(parent) = db_path.parent() {
+            if !parent.exists() {
+                if let Err(e) = fs::create_dir_all(parent) {
+                    eprintln!("Failed to create database directory: {}", e);
+                }
+            }
+        }
+
+        Self {
+            db_path,
+            connection: None,
+            config_dir,
+            default_path_file,
+            filetypes_file,
+            ignored_paths_file,
+            managed_folders_file,
+        }
+    }
+
+    /// Create a Config with custom paths - primarily for testing
+    #[cfg(test)]
+    pub fn with_custom_paths(db_path: PathBuf, config_dir: PathBuf) -> Self {
+        // Create config directory if it doesn't exist
+        if !config_dir.exists() {
+            if let Err(e) = fs::create_dir_all(&config_dir) {
+                eprintln!("Failed to create config directory: {}", e);
+            }
+        }
+
+        // Generate file paths
+        let default_path_file = config_dir.join(DEFAULT_PATH_FILE);
+        let filetypes_file = config_dir.join(FILETYPES_FILE);
+        let ignored_paths_file = config_dir.join(IGNORED_PATHS_FILE);
+        let managed_folders_file = config_dir.join(MANAGED_FOLDERS_FILE);
+
+        // Ensure database directory exists
         if let Some(parent) = db_path.parent() {
             if !parent.exists() {
                 if let Err(e) = fs::create_dir_all(parent) {
