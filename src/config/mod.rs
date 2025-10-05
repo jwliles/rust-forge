@@ -728,11 +728,6 @@ pub fn read_default_path() -> String {
     get_config().read_default_path()
 }
 
-// Set default path
-pub fn set_default_path(path: &str) -> io::Result<()> {
-    get_config().set_default_path(path)
-}
-
 // Get file types
 pub fn get_file_types() -> io::Result<Vec<String>> {
     get_config().read_lines(get_config().get_filetypes_file())
@@ -743,56 +738,11 @@ pub fn get_ignored_paths() -> io::Result<Vec<String>> {
     get_config().read_lines(get_config().get_ignored_paths_file())
 }
 
-// Add file types
-pub fn add_filetypes(extensions: &[String]) -> io::Result<()> {
-    get_config().add_filetypes(extensions)
-}
-
-// Remove file types
-pub fn remove_filetypes(extensions: &[String]) -> io::Result<()> {
-    get_config().remove_filetypes(extensions)
-}
-
-// List file types
-pub fn list_filetypes() -> io::Result<()> {
-    get_config().list_filetypes()
-}
-
-// Add ignored paths
-pub fn add_ignored_paths(paths: &[String]) -> io::Result<()> {
-    get_config().add_ignored_paths(paths)
-}
-
-// Remove ignored paths
-pub fn remove_ignored_paths(paths: &[String]) -> io::Result<()> {
-    get_config().remove_ignored_paths(paths)
-}
-
-// List ignored paths
-pub fn list_ignored_paths() -> io::Result<()> {
-    get_config().list_ignored_paths()
-}
-
 // ---- Managed Folders operations ----
 
 // Add a managed folder
 pub fn add_managed_folder(name: &str, path: &Path) -> io::Result<()> {
     get_config().add_managed_folder(name, path)
-}
-
-// Get managed folders
-pub fn get_managed_folders() -> io::Result<Vec<(String, PathBuf)>> {
-    get_config().get_managed_folders()
-}
-
-// Check if path is a managed folder
-pub fn is_managed_folder(path: &Path) -> io::Result<bool> {
-    get_config().is_managed_folder(path)
-}
-
-// Get managed folder by name
-pub fn get_managed_folder_by_name(name: &str) -> io::Result<Option<PathBuf>> {
-    get_config().get_managed_folder_by_name(name)
 }
 
 // Get the current active managed folder

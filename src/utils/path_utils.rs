@@ -28,10 +28,6 @@ pub fn expand_tilde<P: AsRef<Path>>(path: P) -> PathBuf {
     }
 }
 
-pub fn is_absolute<P: AsRef<Path>>(path: P) -> bool {
-    path.as_ref().is_absolute()
-}
-
 pub fn normalize<P: AsRef<Path>>(path: P) -> PathBuf {
     let path = path.as_ref();
     let path = expand_tilde(path);

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::{self};
 use std::io::{self, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -26,16 +25,6 @@ pub fn create_symlink<P: AsRef<Path>, Q: AsRef<Path>>(source: P, target: Q) -> i
 /// Check if path is a symlink
 pub fn is_symlink<P: AsRef<Path>>(path: P) -> bool {
     path.as_ref().is_symlink()
-}
-
-/// Get the target of a symlink
-pub fn get_symlink_target<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
-    let path = path.as_ref();
-    if !path.is_symlink() {
-        return Err(Error::new(ErrorKind::InvalidInput, "Path is not a symlink"));
-    }
-
-    std::fs::read_link(path)
 }
 
 /// Creates symlinks from files in source directory to target directory
@@ -116,25 +105,6 @@ pub fn create_symlinks<P: AsRef<Path>, Q: AsRef<Path>>(source: P, target: Q) -> 
                         Err(e) => println!("Failed to create symlink for {:?}: {}", path, e),
                     }
                 }
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Remove all symlinks in the given directory
-pub fn remove_old_symlinks<P: AsRef<Path>>(target_dir: P) -> io::Result<()> {
-    for entry in WalkDir::new(target_dir.as_ref())
-        .follow_links(false)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let path = entry.path();
-        if path.is_symlink() {
-            match fs::remove_file(path) {
-                Ok(_) => println!("Removed symlink: {:?}", path),
-                Err(e) => println!("Failed to remove symlink {:?}: {}", path, e),
             }
         }
     }

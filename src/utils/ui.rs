@@ -32,11 +32,6 @@ pub fn confirm_with_text(message: &str, required_text: &str) -> bool {
     input.trim() == required_text
 }
 
-/// Display a warning message in a standard format
-pub fn show_warning(message: &str) {
-    println!("WARNING: {}", message);
-}
-
 /// Format a status message for a dotfile
 pub fn format_dotfile_status(status: crate::dotfile::DotFileStatus) -> String {
     match status {
