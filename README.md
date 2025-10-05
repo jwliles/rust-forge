@@ -24,8 +24,7 @@ Forge provides comprehensive symlink management with clear, intuitive commands.
 - **Pack-and-Go System**: Create portable configuration bundles for easy deployment and backup
 - **Recursive Directory Packing**: Pack entire directory trees with depth control and dry-run preview
 - **BLAKE3 Integrity Verification**: Cryptographic hash verification for all packed files
-- **Interactive Mode**: Visual interface for managing symlink operations
-- **SQLite Backend**: Reliable state tracking with transactional safety
+- **SQLite Backend**: Reliable state tracking for all file operations
 - **Modular Design**: Core functionality with optional feature modules
 
 ## Project Structure
@@ -87,7 +86,7 @@ forge stage nvim/init.lua
 forge stage --recursive ~/.config/nvim
 
 # Stage a directory with contents up to a specific depth
-forge stage --depth=2 ~/.config/i3
+forge stage --depth 2 ~/.config/i3
 
 # Create permanent symlinks for all staged files
 forge link
@@ -121,20 +120,20 @@ Forge includes a powerful pack-and-go system for creating portable configuration
 # 1. Initialize a new pack
 forge start packing my_dotfiles
 
-# 2. Add individual files
-forge pack ~/.vimrc ~/.bashrc ~/.gitconfig
+# 2. Add individual files (specify scope to match the pack name)
+forge pack --scope my_dotfiles ~/.vimrc ~/.bashrc ~/.gitconfig
 
 # 3. Add entire directories recursively
-forge pack --recursive ~/.config/nvim/ ~/.ssh/
+forge pack --scope my_dotfiles --recursive ~/.config/nvim/ ~/.ssh/
 
 # 4. Add directories with limited depth
-forge pack --depth 2 ~/.config/i3/
+forge pack --scope my_dotfiles --depth 2 ~/.config/i3/
 
 # 5. Preview what would be packed (without actually packing)
-forge pack --recursive --dry-run ~/.local/bin/
+forge pack --scope my_dotfiles --recursive --dry-run ~/.local/bin/
 
 # 6. Seal the pack into a portable archive
-forge seal
+forge seal --scope my_dotfiles
 
 # The result is a timestamped ZIP file: my_dotfiles-2025-06-23.zip
 ```
@@ -155,12 +154,12 @@ forge pack --recursive --dry-run ~/.home-configs/ ~/.work-configs/
 
 # Combine different approaches in one pack
 forge start packing mixed_environment
-forge pack ~/.vimrc ~/.bashrc                    # Individual files
-forge pack --recursive ~/.config/nvim/           # Full directory
-forge pack --depth 1 ~/.local/bin/               # Limited depth
-forge pack --dry-run --recursive ~/.scripts/     # Preview first
-forge pack --recursive ~/.scripts/               # Then actually pack
-forge seal
+forge pack --scope mixed_environment ~/.vimrc ~/.bashrc                    # Individual files
+forge pack --scope mixed_environment --recursive ~/.config/nvim/           # Full directory
+forge pack --scope mixed_environment --depth 1 ~/.local/bin/               # Limited depth
+forge pack --scope mixed_environment --dry-run --recursive ~/.scripts/     # Preview first
+forge pack --scope mixed_environment --recursive ~/.scripts/               # Then actually pack
+forge seal --scope mixed_environment
 ```
 
 ### Deployment and Installation
@@ -219,9 +218,9 @@ forge repack --scope my_dotfiles
 # Remove files from a pack
 forge unpack --scope my_dotfiles ~/.old_config
 
-# Remove and reseal
-forge unpack ~/.deprecated_files
-forge seal
+# Remove and reseal (specify the scope)
+forge unpack --scope my_dotfiles ~/.deprecated_files
+forge seal --scope my_dotfiles
 ```
 
 ### Key Features
@@ -252,15 +251,15 @@ forge switch coding
 forge init --name coding
 ```
 
-## Interactive Mode
+## Interactive Mode (Under Development)
 
-Interactive TUI mode is under development. Launch with:
+Interactive TUI mode is planned for future releases. The `-I` flag is reserved but not yet implemented:
 
 ```bash
-forge -I
+forge -I  # Not yet functional
 ```
 
-*Note: Interactive mode is currently a placeholder and will display a message indicating it's not fully implemented.*
+*Note: Interactive mode is on the roadmap for v0.4.x and v1.0.0 releases.*
 
 ## Requirements
 
@@ -272,7 +271,7 @@ forge -I
 
 ## License
 
-MIT License
+GPL-3.0-or-later
 
 ## Development Roadmap
 
@@ -309,10 +308,18 @@ Forge is under active development with the following milestones:
    - [ ] Real-time status updates
    - [ ] Profile management via TUI
 
-5. **v1.0.0** - Production release
+5. **v0.5.x** - Stability and Testing
+   - [x] Comprehensive test suite
+   - [x] Database isolation for parallel tests
+   - [x] Bug fixes for pack-and-go system
+   - [ ] Transaction safety with rollbacks
+   - [ ] Shell completion scripts
+
+6. **v1.0.0** - Production release
    - [ ] Complete feature set
-   - [ ] Comprehensive tests
+   - [ ] Interactive TUI mode
    - [ ] Comprehensive documentation
+   - [ ] Performance optimizations
 
 ## Version Policy and crates.io Releases
 
@@ -356,8 +363,9 @@ Forge is designed to handle errors gracefully and report issues to the user via 
 ### Known Limitations
 
 - **Race Conditions**: Directory creation is not atomic; rare failures may occur if multiple Forge processes run concurrently.
-- **Database Transactions**: Some operations do not use database transactions, which could lead to inconsistent state if interrupted.
+- **Database Transactions**: Operations do not currently use database transactions, which could lead to inconsistent state if interrupted. Transaction support is planned for a future release.
 - **Error Context**: Some error messages may lack detailed context. If you encounter a cryptic error, please report it.
+- **Exit Codes**: Some pack/seal commands may return success (exit code 0) even when operations fail, with errors only visible in stderr.
 
 ### Reporting Bugs
 
