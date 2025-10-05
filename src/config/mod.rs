@@ -15,6 +15,7 @@ pub struct Config {
     db_path: PathBuf,
     connection: Option<Connection>,
     // File-based config paths
+    #[allow(dead_code)]
     config_dir: PathBuf,
     default_path_file: PathBuf,
     filetypes_file: PathBuf,
@@ -22,6 +23,13 @@ pub struct Config {
     managed_folders_file: PathBuf,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)]
 impl Config {
     pub fn new() -> Self {
         // Check for test environment variable to isolate database
@@ -44,10 +52,10 @@ impl Config {
         };
 
         // Create config directory if it doesn't exist
-        if !config_dir.exists() {
-            if let Err(e) = fs::create_dir_all(&config_dir) {
-                eprintln!("Failed to create config directory: {}", e);
-            }
+        if !config_dir.exists()
+            && let Err(e) = fs::create_dir_all(&config_dir)
+        {
+            eprintln!("Failed to create config directory: {}", e);
         }
 
         // Generate file paths
@@ -57,12 +65,11 @@ impl Config {
         let managed_folders_file = config_dir.join(MANAGED_FOLDERS_FILE);
 
         // Ensure config directory for db exists
-        if let Some(parent) = db_path.parent() {
-            if !parent.exists() {
-                if let Err(e) = fs::create_dir_all(parent) {
-                    eprintln!("Failed to create database directory: {}", e);
-                }
-            }
+        if let Some(parent) = db_path.parent()
+            && !parent.exists()
+            && let Err(e) = fs::create_dir_all(parent)
+        {
+            eprintln!("Failed to create database directory: {}", e);
         }
 
         Self {
@@ -80,10 +87,10 @@ impl Config {
     #[cfg(test)]
     pub fn with_custom_paths(db_path: PathBuf, config_dir: PathBuf) -> Self {
         // Create config directory if it doesn't exist
-        if !config_dir.exists() {
-            if let Err(e) = fs::create_dir_all(&config_dir) {
-                eprintln!("Failed to create config directory: {}", e);
-            }
+        if !config_dir.exists()
+            && let Err(e) = fs::create_dir_all(&config_dir)
+        {
+            eprintln!("Failed to create config directory: {}", e);
         }
 
         // Generate file paths
@@ -93,12 +100,11 @@ impl Config {
         let managed_folders_file = config_dir.join(MANAGED_FOLDERS_FILE);
 
         // Ensure database directory exists
-        if let Some(parent) = db_path.parent() {
-            if !parent.exists() {
-                if let Err(e) = fs::create_dir_all(parent) {
-                    eprintln!("Failed to create database directory: {}", e);
-                }
-            }
+        if let Some(parent) = db_path.parent()
+            && !parent.exists()
+            && let Err(e) = fs::create_dir_all(parent)
+        {
+            eprintln!("Failed to create database directory: {}", e);
         }
 
         Self {
@@ -396,14 +402,13 @@ impl Config {
         let file_path = file_path.as_ref();
 
         // Create parent directories if they don't exist
-        if let Some(parent) = file_path.parent() {
-            if !parent.exists() {
-                fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = file_path.parent()
+            && !parent.exists()
+        {
+            fs::create_dir_all(parent)?;
         }
 
         let mut file = OpenOptions::new()
-            .write(true)
             .append(true)
             .create(true)
             .open(file_path)?;
@@ -579,12 +584,12 @@ impl Config {
                 ))
             };
 
-            let mut rows = match profile {
+            let rows = match profile {
                 Some(p) => stmt.query_map([p], map_row)?,
                 None => stmt.query_map([], map_row)?,
             };
 
-            while let Some(dotfile_result) = rows.next() {
+            for dotfile_result in rows {
                 dotfiles.push(dotfile_result?);
             }
         }
@@ -633,12 +638,12 @@ impl Config {
                 ))
             };
 
-            let mut rows = match profile {
+            let rows = match profile {
                 Some(p) => stmt.query_map([p], map_row)?,
                 None => stmt.query_map([], map_row)?,
             };
 
-            while let Some(dotfile_result) = rows.next() {
+            for dotfile_result in rows {
                 dotfiles.push(dotfile_result?);
             }
         }

@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+#[allow(dead_code)]
 pub fn scan_directory<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
     // Implementation of scan_directory
     let dir = dir.as_ref();

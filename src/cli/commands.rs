@@ -170,13 +170,12 @@ pub fn stage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize
                     let target = forge_path.join(dir_name).join(rel_path);
 
                     // Ensure target parent directory exists
-                    if let Some(parent) = target.parent() {
-                        if !parent.exists() {
-                            if let Err(e) = fs::create_dir_all(parent) {
-                                eprintln!("Failed to create directory {}: {}", parent.display(), e);
-                                continue;
-                            }
-                        }
+                    if let Some(parent) = target.parent()
+                        && !parent.exists()
+                        && let Err(e) = fs::create_dir_all(parent)
+                    {
+                        eprintln!("Failed to create directory {}: {}", parent.display(), e);
+                        continue;
                     }
 
                     // Skip existing targets
@@ -498,14 +497,14 @@ pub fn link_command(files: &[PathBuf]) {
         }
 
         // Ensure target parent directory exists
-        if let Some(parent) = dotfile.target.parent() {
-            if !parent.exists() {
-                println!("  Creating parent directory: {}", parent.display());
-                if let Err(e) = fs::create_dir_all(parent) {
-                    eprintln!("Failed to create directory {}: {}", parent.display(), e);
-                    error_count += 1;
-                    continue;
-                }
+        if let Some(parent) = dotfile.target.parent()
+            && !parent.exists()
+        {
+            println!("  Creating parent directory: {}", parent.display());
+            if let Err(e) = fs::create_dir_all(parent) {
+                eprintln!("Failed to create directory {}: {}", parent.display(), e);
+                error_count += 1;
+                continue;
             }
         }
 
@@ -1055,15 +1054,13 @@ pub mod profile {
         match fs::read_dir(&profiles_dir) {
             Ok(entries) => {
                 let mut found = false;
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        if let Ok(metadata) = entry.metadata() {
-                            if metadata.is_dir() {
-                                found = true;
-                                if let Some(name) = entry.file_name().to_str() {
-                                    println!("  - {}", name);
-                                }
-                            }
+                for entry in entries.flatten() {
+                    if let Ok(metadata) = entry.metadata()
+                        && metadata.is_dir()
+                    {
+                        found = true;
+                        if let Some(name) = entry.file_name().to_str() {
+                            println!("  - {}", name);
                         }
                     }
                 }
@@ -1145,8 +1142,6 @@ pub mod profile {
         }
     }
 }
-
-/// Unstage (deactivate) staged files by target path
 
 /// Unstage (deactivate) staged files by target path, with optional recursive support
 pub fn unstage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize>) {
@@ -1272,10 +1267,10 @@ pub fn purge_command_safe(folder: &Path, recursive: bool) {
             }
         }
         // Remove the managed file
-        if let Some(name) = dotfile.target.file_name().and_then(|n| n.to_str()) {
-            if name.starts_with('.') || name == ".forge" {
-                continue;
-            }
+        if let Some(name) = dotfile.target.file_name().and_then(|n| n.to_str())
+            && (name.starts_with('.') || name == ".forge")
+        {
+            continue;
         }
         if let Err(e) = std::fs::remove_file(&dotfile.target) {
             if e.kind() != std::io::ErrorKind::NotFound {
@@ -1301,11 +1296,9 @@ pub fn purge_command_safe(folder: &Path, recursive: bool) {
                 Ok(e) => e,
                 Err(_) => return,
             };
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let p = entry.path();
-                    remove_empty_dirs(&p);
-                }
+            for entry in entries.flatten() {
+                let p = entry.path();
+                remove_empty_dirs(&p);
             }
             // Try to remove the directory (will only succeed if empty)
             let _ = std::fs::remove_dir(path);

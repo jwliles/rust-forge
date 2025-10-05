@@ -1,8 +1,8 @@
 // Integration tests for core forge commands: init, stage, link, unlink, remove, delete
 
 use assert_cmd::prelude::*;
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
+use assert_fs::prelude::*;
 use predicates::prelude::*;
 use std::fs;
 
@@ -17,7 +17,9 @@ fn test_init_command_creates_forge_directory() {
         .current_dir(temp.path())
         .assert()
         .success()
-        .stdout(predicate::str::contains("Forge repository initialized successfully"));
+        .stdout(predicate::str::contains(
+            "Forge repository initialized successfully",
+        ));
 
     // Verify .forge directory was created
     assert!(temp.path().join(".forge").exists());
@@ -304,7 +306,7 @@ fn test_init_without_managed_folder_name_uses_dir_name() {
         .assert()
         .success()
         .stdout(predicate::str::contains(
-            temp.path().file_name().unwrap().to_str().unwrap()
+            temp.path().file_name().unwrap().to_str().unwrap(),
         ));
 }
 
@@ -319,10 +321,7 @@ fn test_help_flag() {
 
 #[test]
 fn test_version_flag() {
-    common::forge_cmd()
-        .arg("--version")
-        .assert()
-        .success();
+    common::forge_cmd().arg("--version").assert().success();
 }
 
 #[test]

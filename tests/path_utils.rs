@@ -109,7 +109,10 @@ fn test_normalize_removes_leading_dot_slash() {
 
     let normalized_str = normalized.to_string_lossy();
     // Should not contain /./
-    assert!(!normalized_str.contains("/./"), "Path should not contain /./");
+    assert!(
+        !normalized_str.contains("/./"),
+        "Path should not contain /./"
+    );
     // Should contain the components in clean form
     assert!(normalized_str.contains("/home/user/config/file.txt"));
 }
@@ -121,7 +124,10 @@ fn test_normalize_removes_parent_dir_refs() {
 
     let normalized_str = normalized.to_string_lossy();
     // Should not contain /../
-    assert!(!normalized_str.contains("/../"), "Path should not contain /../");
+    assert!(
+        !normalized_str.contains("/../"),
+        "Path should not contain /../"
+    );
     // Should resolve to /home/other/file.txt
     assert!(normalized_str.contains("/home/other/file.txt"));
 }
@@ -133,7 +139,10 @@ fn test_normalize_handles_multiple_dots() {
 
     let normalized_str = normalized.to_string_lossy();
     // Should not contain any /./
-    assert!(!normalized_str.contains("/./"), "Path should not contain any /./");
+    assert!(
+        !normalized_str.contains("/./"),
+        "Path should not contain any /./"
+    );
     assert_eq!(normalized, PathBuf::from("/home/user/config/file.txt"));
 }
 
@@ -146,5 +155,8 @@ fn test_normalize_relative_path_with_dot() {
     assert!(normalized.is_absolute());
     // Should not contain ./
     let normalized_str = normalized.to_string_lossy();
-    assert!(!normalized_str.contains("/./"), "Path should not contain /./");
+    assert!(
+        !normalized_str.contains("/./"),
+        "Path should not contain /./"
+    );
 }

@@ -33,12 +33,12 @@ pub fn normalize<P: AsRef<Path>>(path: P) -> PathBuf {
     let path = expand_tilde(path);
 
     // Make the path absolute if it's not already
-    if !path.is_absolute() {
-        if let Ok(current_dir) = std::env::current_dir() {
-            // Strip . and .. components before joining
-            let clean_path = clean_path_components(&path);
-            return current_dir.join(clean_path);
-        }
+    if !path.is_absolute()
+        && let Ok(current_dir) = std::env::current_dir()
+    {
+        // Strip . and .. components before joining
+        let clean_path = clean_path_components(&path);
+        return current_dir.join(clean_path);
     }
 
     // Also clean absolute paths in case they have . or ..

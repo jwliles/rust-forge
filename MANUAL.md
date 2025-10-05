@@ -1,6 +1,6 @@
 # Forge Manual
 
-**FORGE(1)** - User Commands - **forge 0.4.0** - June 2025
+**FORGE(1)** - User Commands - **forge 0.5.1** - October 2025
 
 ## NAME
 

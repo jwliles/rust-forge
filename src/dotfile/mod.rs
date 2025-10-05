@@ -19,6 +19,7 @@ pub enum DotFileStatus {
     Unlinked,
 }
 
+#[allow(dead_code)]
 impl DotFile {
     pub fn new(source: PathBuf, target: PathBuf, profile: Option<String>) -> Self {
         Self {

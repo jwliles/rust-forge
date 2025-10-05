@@ -1,7 +1,7 @@
 // Unit tests for symlink utility functions
 
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
+use assert_fs::prelude::*;
 use forge_rs::symlink;
 
 #[test]

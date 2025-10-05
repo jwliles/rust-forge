@@ -599,7 +599,7 @@ fn install_pack_impl(
     let files_dir = temp_dir.path().join("files");
     let mut installed_count = 0;
 
-    for (_, pack_file) in &manifest.files {
+    for pack_file in manifest.files.values() {
         let source_in_archive = files_dir.join(&pack_file.relative_path);
 
         if !source_in_archive.exists() {
@@ -703,7 +703,7 @@ fn restore_pack_impl(
     let files_dir = temp_dir.path().join("files");
     let mut restored_count = 0;
 
-    for (_, pack_file) in &manifest.files {
+    for pack_file in manifest.files.values() {
         let source_in_archive = files_dir.join(&pack_file.relative_path);
 
         if !source_in_archive.exists() {
@@ -813,7 +813,7 @@ fn calculate_install_target_path(
                 if path_parts.len() >= 3 && path_parts[1] == "home" {
                     // Replace /home/username with current home
                     let relative_path = Path::new(&original_path)
-                        .strip_prefix(&format!("/home/{}", path_parts[2]))
+                        .strip_prefix(format!("/home/{}", path_parts[2]))
                         .unwrap_or(Path::new(original_path));
                     return Ok(current_home.join(relative_path));
                 }
@@ -937,7 +937,7 @@ fn repack_files_impl(scope: &str, files: &[PathBuf]) -> Result<usize> {
         let manifest: PackManifest = toml::from_str(&content)?;
 
         let files_to_repack: Vec<PathBuf> =
-            manifest.files.keys().map(|s| PathBuf::from(s)).collect();
+            manifest.files.keys().map(PathBuf::from).collect();
 
         pack_files_impl(&files_to_repack, scope, false, None, false)
     } else {
@@ -1067,7 +1067,7 @@ fn explain_pack_impl(
 
     // Show file listing
     println!("\n📁 Files in Pack:");
-    for (_, pack_file) in &manifest.files {
+    for pack_file in manifest.files.values() {
         let hash_display = pack_file
             .hash
             .as_ref()
@@ -1080,7 +1080,7 @@ fn explain_pack_impl(
     }
 
     // Show installation plans if requested
-    if show_install || (!show_install && !show_restore) {
+    if show_install || !show_restore {
         println!("\n🎯 Install Plan (forge install):");
         if let Some(target_dir) = target {
             println!("   Target: {} (specified)", target_dir.display());
@@ -1089,7 +1089,7 @@ fn explain_pack_impl(
             println!("   Target: {} (current directory)", cwd.display());
         }
 
-        for (_, pack_file) in &manifest.files {
+        for pack_file in manifest.files.values() {
             let install_target =
                 calculate_install_target_path(&pack_file.target_path, target, false)?;
             let status = if install_target.exists() {
@@ -1106,11 +1106,11 @@ fn explain_pack_impl(
         }
     }
 
-    if show_restore || (!show_install && !show_restore) {
+    if show_restore || !show_install {
         println!("\n🔄 Restore Plan (forge restore):");
         println!("   Target: Original absolute paths");
 
-        for (_, pack_file) in &manifest.files {
+        for pack_file in manifest.files.values() {
             let restore_target = calculate_restore_target_path(&pack_file.target_path, false)?;
             let status = if restore_target.exists() {
                 "⚠️  CONFLICT"
@@ -1127,9 +1127,9 @@ fn explain_pack_impl(
     }
 
     // Show summary
-    let install_conflicts = if show_install || (!show_install && !show_restore) {
+    let install_conflicts = if show_install || !show_restore {
         let mut conflicts = 0;
-        for (_, pack_file) in &manifest.files {
+        for pack_file in manifest.files.values() {
             let install_target =
                 calculate_install_target_path(&pack_file.target_path, target, false)?;
             if install_target.exists() {
@@ -1141,9 +1141,9 @@ fn explain_pack_impl(
         0
     };
 
-    let restore_conflicts = if show_restore || (!show_install && !show_restore) {
+    let restore_conflicts = if show_restore || !show_install {
         let mut conflicts = 0;
-        for (_, pack_file) in &manifest.files {
+        for pack_file in manifest.files.values() {
             let restore_target = calculate_restore_target_path(&pack_file.target_path, false)?;
             if restore_target.exists() {
                 conflicts += 1;
@@ -1155,7 +1155,7 @@ fn explain_pack_impl(
     };
 
     println!("\n📊 Summary:");
-    if show_install || (!show_install && !show_restore) {
+    if show_install || !show_restore {
         if install_conflicts > 0 {
             println!(
                 "   Install: {} conflicts detected (use --force to overwrite)",
@@ -1166,7 +1166,7 @@ fn explain_pack_impl(
         }
     }
 
-    if show_restore || (!show_install && !show_restore) {
+    if show_restore || !show_install {
         if restore_conflicts > 0 {
             println!(
                 "   Restore: {} conflicts detected (use --force to overwrite)",

@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
+#[allow(dead_code)]
 pub fn backup_file<P: AsRef<Path>>(path: P) -> io::Result<()> {
     // Implementation of backup_file
     let path = path.as_ref();

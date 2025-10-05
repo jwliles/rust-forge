@@ -1,7 +1,7 @@
 // Tests to verify database isolation between tests
 
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
+use assert_fs::prelude::*;
 
 mod common;
 
@@ -58,10 +58,14 @@ fn test_database_isolation_between_tests() {
     let stdout1 = String::from_utf8_lossy(&output1.stdout);
 
     // First repo should contain test1.txt but not test2.txt
-    assert!(stdout1.contains("test1.txt"),
-        "First repo list should contain test1.txt");
-    assert!(!stdout1.contains("test2.txt"),
-        "First repo should NOT contain test2.txt");
+    assert!(
+        stdout1.contains("test1.txt"),
+        "First repo list should contain test1.txt"
+    );
+    assert!(
+        !stdout1.contains("test2.txt"),
+        "First repo should NOT contain test2.txt"
+    );
 
     // List files in second repo - should only see test2.txt
     let output2 = ctx2
@@ -78,10 +82,14 @@ fn test_database_isolation_between_tests() {
     eprintln!("=== Second repo output ===\n{}", stdout2);
 
     // Second repo should contain test2.txt but not test1.txt
-    assert!(stdout2.contains("test2.txt"),
-        "Second repo list should contain test2.txt");
-    assert!(!stdout2.contains("test1.txt"),
-        "Second repo should NOT contain files from first repo - database isolation failed!");
+    assert!(
+        stdout2.contains("test2.txt"),
+        "Second repo list should contain test2.txt"
+    );
+    assert!(
+        !stdout2.contains("test1.txt"),
+        "Second repo should NOT contain files from first repo - database isolation failed!"
+    );
 }
 
 #[test]
@@ -173,6 +181,8 @@ fn test_no_cross_contamination_after_cleanup() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     // Should be empty or not contain files from previous test
-    assert!(!stdout.contains("test.txt"),
-        "New test should not see files from previous test!");
+    assert!(
+        !stdout.contains("test.txt"),
+        "New test should not see files from previous test!"
+    );
 }

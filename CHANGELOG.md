@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-10-05
+
+### Fixed
+- Pack-and-go exponential growth by excluding .forge directory from recursive operations
+- Manifest path normalization bug in pack system
+
+### Changed
+- Removed dead code and unused functions for improved maintainability
+
+### Added
+- Comprehensive test suite with 15+ test files covering core functionality
+- Test database isolation for parallel test execution
+- Database isolation via environment variables (FORGE_TEST_DB, FORGE_TEST_CONFIG_DIR)
+
+## [0.5.0] - 2025-08-15
+
+### Fixed
+- Critical panics from unwrap() calls in production code
+- UI flush operations now handle errors gracefully
+- Path handling edge cases with defensive error checking
+- File operation logic to prevent data loss during symlink creation
+
+### Changed
+- Improved error handling throughout the codebase
+- Operation ordering in file management to ensure safety
+
+### Added
+- Comprehensive bug fixes documented in BUGS.md
+- Robust error handling for edge cases
+
 ## [0.4.0] - 2025-06-23
 
 ### Added
@@ -88,7 +118,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command structure (heat, forge, cool, profile)
 - Basic symlink creation tests
 
-[Unreleased]: https://github.com/jwliles/rust-forge/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/jwliles/rust-forge/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/jwliles/rust-forge/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/jwliles/rust-forge/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/jwliles/rust-forge/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/jwliles/rust-forge/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jwliles/rust-forge/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/jwliles/rust-forge/compare/v0.2.0...v0.3.0

@@ -3,7 +3,7 @@ use std::io::{self, Write};
 /// Prompt the user for confirmation, returning true if they answer yes
 pub fn confirm(message: &str) -> bool {
     print!("{} [y/N]: ", message);
-    if let Err(_) = io::stdout().flush() {
+    if io::stdout().flush().is_err() {
         eprintln!("Warning: Failed to flush stdout");
     }
 
@@ -20,7 +20,7 @@ pub fn confirm(message: &str) -> bool {
 pub fn confirm_with_text(message: &str, required_text: &str) -> bool {
     println!("{}", message);
     print!("Type '{}' to confirm: ", required_text);
-    if let Err(_) = io::stdout().flush() {
+    if io::stdout().flush().is_err() {
         eprintln!("Warning: Failed to flush stdout");
     }
 

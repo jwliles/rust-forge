@@ -2,6 +2,7 @@ use crate::symlink;
 use std::io;
 use std::path::Path;
 
+#[allow(dead_code)]
 pub fn link_file<P: AsRef<Path>, Q: AsRef<Path>>(source: P, target: Q) -> io::Result<()> {
     // Implementation of link_file
     let source = source.as_ref();
