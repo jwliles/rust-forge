@@ -9,6 +9,10 @@ repository = "https://github.com/jwliles/rust-forge"
 keywords = ["symlink", "dotfiles", "stow", "configuration"]
 categories = ["command-line-utilities", "filesystem"]
 
+[lib]
+name = "forge_rs"
+path = "src/lib.rs"
+
 [[bin]]
 name = "forge"  # This will be the binary name
 path = "src/main.rs"
