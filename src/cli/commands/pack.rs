@@ -255,7 +255,13 @@ fn pack_files_impl(
                     .max_depth(walkdir_depth)
                     .into_iter()
                     .filter_map(|e| e.ok())
-                    .filter(|e| e.path().is_file())
+                    .filter(|e| {
+                        // Skip .forge directory and its contents
+                        if e.path().components().any(|c| c.as_os_str() == ".forge") {
+                            return false;
+                        }
+                        e.path().is_file()
+                    })
                 {
                     // Calculate relative path from original directory
                     let rel_path = entry

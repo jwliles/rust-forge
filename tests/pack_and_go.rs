@@ -465,3 +465,106 @@ fn test_seal_without_packing_fails() {
         .assert()
         .failure();
 }
+
+#[test]
+fn test_pack_excludes_forge_directory() {
+    let temp = TempDir::new().unwrap();
+
+    // Initialize forge repository
+    common::init_forge_repo(&temp).unwrap();
+
+    // Create some test files
+    let test_file1 = temp.child("file1.txt");
+    test_file1.write_str("content1").unwrap();
+
+    let test_file2 = temp.child("file2.txt");
+    test_file2.write_str("content2").unwrap();
+
+    // Start a pack
+    common::forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("exclude-test")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Pack the entire directory recursively
+    common::forge_cmd()
+        .arg("pack")
+        .arg("--recursive")
+        .arg(temp.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Seal the pack
+    common::forge_cmd()
+        .arg("seal")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Now try packing again - the previous pack should not be included
+    common::forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("exclude-test2")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    common::forge_cmd()
+        .arg("pack")
+        .arg("--recursive")
+        .arg(temp.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // The second pack should only contain the original files, not the first pack
+    // We verify this by checking that the command succeeds without exponential growth
+    common::forge_cmd()
+        .arg("seal")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Check that both zip files exist in .forge/archives but the second isn't massively larger
+    let archives_dir = temp.path().join(".forge").join("archives");
+    assert!(archives_dir.exists(), ".forge/archives directory should exist");
+
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
+        .collect();
+
+    assert!(zip_files.len() >= 2, "Should have created at least 2 pack files in .forge/archives");
+
+    // Both packs should be roughly similar in size (not exponentially growing)
+    // The key test: second pack should not be significantly larger than first
+    let mut sizes: Vec<u64> = zip_files
+        .iter()
+        .map(|e| e.metadata().unwrap().len())
+        .collect();
+    sizes.sort();
+
+    if sizes.len() >= 2 {
+        let first_size = sizes[0];
+        let second_size = sizes[1];
+
+        // Both should be non-empty
+        assert!(first_size > 0, "First pack should not be empty");
+        assert!(second_size > 0, "Second pack should not be empty");
+
+        // Second pack should not be more than 5x the first (if it included the first pack, it would be much larger)
+        // This is generous to account for manifest and compression differences
+        assert!(
+            second_size < first_size * 5,
+            "Second pack ({} bytes) should not be significantly larger than first ({} bytes) - .forge directory should be excluded",
+            second_size,
+            first_size
+        );
+    }
+}
