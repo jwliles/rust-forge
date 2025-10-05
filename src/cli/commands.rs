@@ -77,12 +77,6 @@ pub fn init_command(name: Option<&str>, dir: Option<&Path>) {
         }
     }
 }
-
-/// Add files to be tracked for symlinking (legacy heat command)
-pub fn heat_command(files: &[PathBuf]) {
-    stage_command(files, false, None)
-}
-
 /// Stage files to be tracked for symlinking
 pub fn stage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize>) {
     if recursive {
@@ -309,11 +303,6 @@ pub fn stage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usize
     }
 
     println!("\nNOTE: Files are only staged. Use 'forge link' to create permanent symlinks.");
-}
-
-/// Create symlinks for all staged/tracked files (legacy forge command)
-pub fn forge_command() {
-    link_command(&[])
 }
 
 /// Create symlinks for all staged/tracked files
@@ -640,11 +629,6 @@ pub fn link_command(files: &[PathBuf]) {
         "\nSymlink creation completed: {} succeeded, {} failed",
         success_count, error_count
     );
-}
-
-/// Remove symlinks for specific files (legacy cool command)
-pub fn cool_command(files: &[PathBuf], _skip_confirm: bool) {
-    unlink_command(files, _skip_confirm)
 }
 
 /// List all tracked files
@@ -1241,22 +1225,6 @@ pub fn unstage_command(files: &[PathBuf], recursive: bool, max_depth: Option<usi
             }
         }
     }
-}
-
-/// Purge all dotfile records (staged or managed) and forge files for a specified folder
-pub fn purge_command(folder: &Path, recursive: bool) {
-    let abs_folder = path_utils::normalize(folder);
-    println!(
-        "Purging all dotfile records and forge files for folder: {}",
-        abs_folder.display()
-    );
-    // Remove from database
-    match crate::config::purge_dotfiles_in_folder(&abs_folder, recursive) {
-        Ok(count) => println!("Purged {} database records.", count),
-        Err(e) => eprintln!("Failed to purge database records: {}", e),
-    }
-    // Remove files in forge directory
-    // (Optional: implement if desired, or prompt user)
 }
 
 /// Purge all dotfile records and managed files for a specified folder, restoring originals to prevent data loss
