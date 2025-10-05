@@ -100,3 +100,51 @@ fn test_normalize_preserves_path_components() {
     assert!(normalized_str.contains("nvim"));
     assert!(normalized_str.contains("init.lua"));
 }
+
+#[test]
+fn test_normalize_removes_leading_dot_slash() {
+    // Test the manifest bug fix: paths like /home/user/./file should become /home/user/file
+    let path = Path::new("/home/user/./config/file.txt");
+    let normalized = path_utils::normalize(path);
+
+    let normalized_str = normalized.to_string_lossy();
+    // Should not contain /./
+    assert!(!normalized_str.contains("/./"), "Path should not contain /./");
+    // Should contain the components in clean form
+    assert!(normalized_str.contains("/home/user/config/file.txt"));
+}
+
+#[test]
+fn test_normalize_removes_parent_dir_refs() {
+    let path = Path::new("/home/user/../other/file.txt");
+    let normalized = path_utils::normalize(path);
+
+    let normalized_str = normalized.to_string_lossy();
+    // Should not contain /../
+    assert!(!normalized_str.contains("/../"), "Path should not contain /../");
+    // Should resolve to /home/other/file.txt
+    assert!(normalized_str.contains("/home/other/file.txt"));
+}
+
+#[test]
+fn test_normalize_handles_multiple_dots() {
+    let path = Path::new("/home/./user/./config/./file.txt");
+    let normalized = path_utils::normalize(path);
+
+    let normalized_str = normalized.to_string_lossy();
+    // Should not contain any /./
+    assert!(!normalized_str.contains("/./"), "Path should not contain any /./");
+    assert_eq!(normalized, PathBuf::from("/home/user/config/file.txt"));
+}
+
+#[test]
+fn test_normalize_relative_path_with_dot() {
+    let path = Path::new("./config/file.txt");
+    let normalized = path_utils::normalize(path);
+
+    // Should be absolute
+    assert!(normalized.is_absolute());
+    // Should not contain ./
+    let normalized_str = normalized.to_string_lossy();
+    assert!(!normalized_str.contains("/./"), "Path should not contain /./");
+}

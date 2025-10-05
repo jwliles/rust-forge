@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 pub fn expand_tilde<P: AsRef<Path>>(path: P) -> PathBuf {
     let path = path.as_ref();
@@ -39,9 +39,31 @@ pub fn normalize<P: AsRef<Path>>(path: P) -> PathBuf {
     // Make the path absolute if it's not already
     if !path.is_absolute() {
         if let Ok(current_dir) = std::env::current_dir() {
-            return current_dir.join(path);
+            // Strip . and .. components before joining
+            let clean_path = clean_path_components(&path);
+            return current_dir.join(clean_path);
         }
     }
 
-    path
+    // Also clean absolute paths in case they have . or ..
+    clean_path_components(&path)
+}
+
+fn clean_path_components(path: &Path) -> PathBuf {
+    let mut components = Vec::new();
+
+    for component in path.components() {
+        match component {
+            Component::CurDir => continue, // Skip "."
+            Component::ParentDir => {
+                // Handle ".." by popping previous component
+                if !components.is_empty() {
+                    components.pop();
+                }
+            }
+            comp => components.push(comp),
+        }
+    }
+
+    components.iter().collect()
 }
