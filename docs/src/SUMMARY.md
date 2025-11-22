@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598162
+title: SUMMARY
+id: c6037fd7-9dde-44af-aefd-19d0d44c690c
+hash: 35fa6ca47d0f57363d335f80ae66c61c8ad193a03586e5997eb7e27957b438cb
+---
 # Summary
 
 [Introduction](introduction.md)

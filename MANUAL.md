@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-05T16-06-33
+date_updated: 2025-10-05T16-06-33
+timestamp: 1759680393826
+title: MANUAL
+id: c6a156a7-e435-44c9-916f-553012486028
+hash: 5fc8be218199d47b6f4ed00cfb364e96c08b939febd7a2c477f009faef46b066
+---
 # Forge Manual
 
 **FORGE(1)** - User Commands - **forge 0.5.1** - October 2025

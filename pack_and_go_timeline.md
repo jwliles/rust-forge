@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598162
+title: pack_and_go_timeline
+id: 71e34789-3659-4b83-b124-7f9f5039b274
+hash: 68872dc9c2de74dc6ff7c112c68ee338ef0e48cfee5041bb805601cf15ef4bf0
+---
 ## Forge Pack-and-Go – Development Timeline
 
 ### Overview

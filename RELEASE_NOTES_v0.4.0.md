@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598161
+title: RELEASE_NOTES_v0.4.0
+id: 94094b8d-131e-409f-b29e-57a4940a6d85
+hash: 56500572d39e0ebc7adfd83163c083965bf8cae4e39bc9a5ba7b49ba96b3bc2b
+---
 # Release Notes - v0.4.0
 
 ## Remaining tasks for v0.4.0 release

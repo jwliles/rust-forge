@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598162
+title: introduction
+id: 3a76cceb-a7a2-4523-993e-af4cc73c3b6b
+hash: 984547b23c2b33130945b7336a6de907a5cf3ba0980298c4ea4b900ea072cc31
+---
 # Introduction to Forge
 
 Forge is a powerful symlink management tool designed as a modern alternative to GNU Stow. It provides comprehensive management of dotfiles, scripts, and other configuration files with clear, intuitive commands.

@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-05T16-06-20
+date_updated: 2025-10-05T16-06-20
+timestamp: 1759680380888
+title: CHANGELOG
+id: 3e9632ad-2e24-4171-8bba-798d7150d678
+hash: eaa859323727e1ba4c780cb29ea3af90f75115042e551a813eb707dc71778b51
+---
 # Changelog
 
 All notable changes to Forge will be documented in this file.

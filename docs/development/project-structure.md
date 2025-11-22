@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598161
+title: project-structure
+id: 5a8e91ae-30eb-4445-9add-7660e330a1ff
+hash: 9ea6fcded619726f62b59d3eca72ae0f899a2ad1e459855dca3dcec97dd311d1
+---
 # Project Structure
 
 Forge is organized into a modular structure following Rust conventions.

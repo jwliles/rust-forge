@@ -1,3 +1,11 @@
+---
+date_created: 2025-10-03T02-46-38
+date_updated: 2025-10-03T02-46-38
+timestamp: 1759459598161
+title: CONTRIBUTING
+id: a438cf88-e72d-4aef-ba9e-71f6fffab035
+hash: fbfc6cdc61eb951126e852079d5fc8880abc38d8cb792eea90c7f30658d9edb6
+---
 # Contributing to Forge
 
 Thank you for your interest in contributing to Forge! This document provides guidelines and workflows for contributing to the project.
