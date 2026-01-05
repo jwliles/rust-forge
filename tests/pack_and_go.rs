@@ -219,11 +219,13 @@ fn test_seal_creates_archive() {
 
 #[test]
 fn test_explain_pack_contents() {
+    let ctx = common::TestContext::new();
     let temp = TempDir::new().unwrap();
     let pack_temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&pack_temp).unwrap();
 
     // Create and seal a pack
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("start")
         .arg("packing")
         .arg("explain-test")
@@ -234,21 +236,26 @@ fn test_explain_pack_contents() {
     let test_file = pack_temp.child("test.txt");
     test_file.write_str("content").unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("pack")
+        .arg("--scope")
+        .arg("explain-test")
         .arg(test_file.path())
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("seal")
+        .arg("--scope")
+        .arg("explain-test")
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    // Find the created zip file
-    let zip_files: Vec<_> = fs::read_dir(pack_temp.path())
+    // Find the created zip file in .forge/archives
+    let archives_dir = pack_temp.path().join(".forge").join("archives");
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
@@ -268,11 +275,13 @@ fn test_explain_pack_contents() {
 
 #[test]
 fn test_install_pack() {
+    let ctx = common::TestContext::new();
     let pack_temp = TempDir::new().unwrap();
     let install_temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&pack_temp).unwrap();
 
     // Create and seal a pack
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("start")
         .arg("packing")
         .arg("install-test")
@@ -283,21 +292,26 @@ fn test_install_pack() {
     let test_file = pack_temp.child("test.txt");
     test_file.write_str("install content").unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("pack")
+        .arg("--scope")
+        .arg("install-test")
         .arg(test_file.path())
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("seal")
+        .arg("--scope")
+        .arg("install-test")
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    // Find the created zip file
-    let zip_files: Vec<_> = fs::read_dir(pack_temp.path())
+    // Find the created zip file in .forge/archives
+    let archives_dir = pack_temp.path().join(".forge").join("archives");
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
@@ -318,10 +332,12 @@ fn test_install_pack() {
 
 #[test]
 fn test_install_with_force_flag() {
+    let ctx = common::TestContext::new();
     let pack_temp = TempDir::new().unwrap();
     let install_temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&pack_temp).unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("start")
         .arg("packing")
         .arg("force-test")
@@ -332,20 +348,25 @@ fn test_install_with_force_flag() {
     let test_file = pack_temp.child("test.txt");
     test_file.write_str("content").unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("pack")
+        .arg("--scope")
+        .arg("force-test")
         .arg(test_file.path())
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("seal")
+        .arg("--scope")
+        .arg("force-test")
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    let zip_files: Vec<_> = fs::read_dir(pack_temp.path())
+    let archives_dir = pack_temp.path().join(".forge").join("archives");
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
@@ -366,10 +387,12 @@ fn test_install_with_force_flag() {
 
 #[test]
 fn test_install_skip_existing() {
+    let ctx = common::TestContext::new();
     let pack_temp = TempDir::new().unwrap();
     let install_temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&pack_temp).unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("start")
         .arg("packing")
         .arg("skip-test")
@@ -380,20 +403,25 @@ fn test_install_skip_existing() {
     let test_file = pack_temp.child("test.txt");
     test_file.write_str("content").unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("pack")
+        .arg("--scope")
+        .arg("skip-test")
         .arg(test_file.path())
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("seal")
+        .arg("--scope")
+        .arg("skip-test")
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    let zip_files: Vec<_> = fs::read_dir(pack_temp.path())
+    let archives_dir = pack_temp.path().join(".forge").join("archives");
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
@@ -414,10 +442,12 @@ fn test_install_skip_existing() {
 
 #[test]
 fn test_restore_pack() {
+    let ctx = common::TestContext::new();
     let pack_temp = TempDir::new().unwrap();
     let restore_temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&pack_temp).unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("start")
         .arg("packing")
         .arg("restore-test")
@@ -428,20 +458,25 @@ fn test_restore_pack() {
     let test_file = pack_temp.child("test.txt");
     test_file.write_str("restore content").unwrap();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("pack")
+        .arg("--scope")
+        .arg("restore-test")
         .arg(test_file.path())
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    common::forge_cmd()
+    ctx.forge_cmd()
         .arg("seal")
+        .arg("--scope")
+        .arg("restore-test")
         .current_dir(pack_temp.path())
         .assert()
         .success();
 
-    let zip_files: Vec<_> = fs::read_dir(pack_temp.path())
+    let archives_dir = pack_temp.path().join(".forge").join("archives");
+    let zip_files: Vec<_> = fs::read_dir(&archives_dir)
         .unwrap()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("zip"))
@@ -632,4 +667,204 @@ fn test_pack_excludes_forge_directory() {
             first_size
         );
     }
+}
+
+#[test]
+fn test_seal_validation_catches_modified_files() {
+    let ctx = common::TestContext::new();
+    let temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&temp).unwrap();
+
+    // Start pack
+    ctx.forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("validation-test")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Create and pack a file
+    let test_file = temp.child("test.txt");
+    test_file.write_str("original content").unwrap();
+
+    ctx.forge_cmd()
+        .arg("pack")
+        .arg("--scope")
+        .arg("validation-test")
+        .arg(test_file.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Modify the file after packing
+    test_file.write_str("modified content").unwrap();
+
+    // Try to seal - should fail with validation error
+    let output = ctx.forge_cmd()
+        .arg("seal")
+        .arg("--scope")
+        .arg("validation-test")
+        .current_dir(temp.path())
+        .output()
+        .unwrap();
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("modified") || stderr.contains("hash mismatch") || stderr.contains("changed"),
+        "Expected validation error, got: {}", stderr
+    );
+    assert!(!output.status.success(), "Seal should fail when files are modified");
+}
+
+#[test]
+fn test_seal_succeeds_when_files_unchanged() {
+    let ctx = common::TestContext::new();
+    let temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&temp).unwrap();
+
+    ctx.forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("unchanged-test")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    let test_file = temp.child("test.txt");
+    test_file.write_str("content").unwrap();
+
+    ctx.forge_cmd()
+        .arg("pack")
+        .arg("--scope")
+        .arg("unchanged-test")
+        .arg(test_file.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Seal without modifying - should succeed
+    ctx.forge_cmd()
+        .arg("seal")
+        .arg("--scope")
+        .arg("unchanged-test")
+        .current_dir(temp.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("validated").or(predicate::str::contains("sealed")));
+}
+
+#[test]
+fn test_check_command_shows_file_status() {
+    let ctx = common::TestContext::new();
+    let temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&temp).unwrap();
+
+    ctx.forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("check-test")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    let test_file = temp.child("test.txt");
+    test_file.write_str("content").unwrap();
+
+    ctx.forge_cmd()
+        .arg("pack")
+        .arg("--scope")
+        .arg("check-test")
+        .arg(test_file.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Check command should show unchanged file
+    ctx.forge_cmd()
+        .arg("check")
+        .arg("--scope")
+        .arg("check-test")
+        .current_dir(temp.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("test.txt"));
+}
+
+#[test]
+fn test_check_command_detects_modified_files() {
+    let ctx = common::TestContext::new();
+    let temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&temp).unwrap();
+
+    ctx.forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("check-modified")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    let test_file = temp.child("test.txt");
+    test_file.write_str("original").unwrap();
+
+    ctx.forge_cmd()
+        .arg("pack")
+        .arg("--scope")
+        .arg("check-modified")
+        .arg(test_file.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Modify the file
+    test_file.write_str("modified").unwrap();
+
+    // Check command should detect the modification
+    ctx.forge_cmd()
+        .arg("check")
+        .arg("--scope")
+        .arg("check-modified")
+        .current_dir(temp.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("MODIFIED").or(predicate::str::contains("changed")));
+}
+
+#[test]
+fn test_no_files_directory_created_during_pack() {
+    let ctx = common::TestContext::new();
+    let temp = TempDir::new().unwrap();
+    ctx.init_forge_repo(&temp).unwrap();
+
+    ctx.forge_cmd()
+        .arg("start")
+        .arg("packing")
+        .arg("no-files-dir")
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    let test_file = temp.child("test.txt");
+    test_file.write_str("content").unwrap();
+
+    ctx.forge_cmd()
+        .arg("pack")
+        .arg("--scope")
+        .arg("no-files-dir")
+        .arg(test_file.path())
+        .current_dir(temp.path())
+        .assert()
+        .success();
+
+    // Check that files/ subdirectory was NOT created
+    let staging_dir = temp.path().join(".forge").join("tmp").join("pack").join("no-files-dir");
+    let files_dir = staging_dir.join("files");
+
+    assert!(staging_dir.exists(), "Staging directory should exist");
+    assert!(!files_dir.exists(), "files/ subdirectory should NOT be created during pack");
+
+    // Manifest should exist
+    let manifest_path = staging_dir.join("manifest.toml");
+    assert!(manifest_path.exists(), "manifest.toml should exist");
 }

@@ -1,11 +1,3 @@
----
-date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598162
-title: pack_and_go_design
-id: 551a2d41-9158-4ffe-a595-863123c7ca7e
-hash: eea92861a01b03938a24ebc22e8ed28a17bfdcaed9306e7b8c3156fc843527f0
----
 # Forge "Pack‑and‑Go" Profile Feature Expansion – Detailed Design Document
 
 *Version: Draft 0.4  ·  Last updated: 2025‑06‑21*
@@ -51,4 +43,3 @@ For years, advanced users have relied on ad‑hoc **dotfile repos**, fragile **s
 | **Hash**              | Generate/check per-file hashes for integrity validation.                          | Used for changes and comparisons.        |
 
 ...
-

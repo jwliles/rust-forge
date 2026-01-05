@@ -25,7 +25,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize a directory as a forge managed folder
+    /// Initialize a directory as a forge-managed folder
     Init {
         /// Name for this forge repository (defaults to directory name)
         #[arg(short, long)]
@@ -35,7 +35,7 @@ enum Commands {
         #[arg(short, long)]
         dir: Option<PathBuf>,
     },
-    /// Unstage staged files by target path
+    /// Unstage staged files by the target path
     Unstage {
         /// Files or directories to unstage
         files: Vec<PathBuf>,
@@ -169,14 +169,14 @@ enum Commands {
         /// Target directory for installation (defaults to current working directory)
         #[arg(short, long)]
         target: Option<PathBuf>,
-        /// Map home directory paths to current user's home
+        /// Map home directory paths to the current user's home
         #[arg(long)]
         map_home: bool,
         /// Show what would be installed without actually installing
         #[arg(long)]
         dry_run: bool,
     },
-    /// Restore a sealed pack to original locations on current system
+    /// Restore a sealed pack to original locations on the current system
     Restore {
         /// Path to the pack archive (.zip file)
         archive: PathBuf,
@@ -186,7 +186,7 @@ enum Commands {
         /// Skip files that already exist (opposite of --force)
         #[arg(long)]
         skip_existing: bool,
-        /// Test mode: restore to current directory using filenames only (safe for testing)
+        /// Test mode: restore to the current directory using filenames only (safe for testing)
         #[arg(long)]
         test: bool,
         /// Show what would be restored without actually restoring
@@ -213,15 +213,21 @@ enum Commands {
     Explain {
         /// Path to the pack archive (.zip file)
         archive: PathBuf,
-        /// Show installation plan for install command (defaults to current directory)
+        /// Show the installation plan for install command (defaults to current directory)
         #[arg(long)]
         install: bool,
-        /// Show restoration plan for restore command  
+        /// Show the restoration plan for restore command
         #[arg(long)]
         restore: bool,
         /// Target directory for install plan preview
         #[arg(short, long)]
         target: Option<PathBuf>,
+    },
+    /// Check pack manifest integrity and show file status
+    Check {
+        /// Pack scope to check (defaults to current working directory name)
+        #[arg(short, long)]
+        scope: Option<String>,
     },
 }
 
@@ -294,7 +300,7 @@ fn main() {
             cli::commands::profile::switch(name);
         }
         Some(Commands::New { profile, path }) => {
-            // Initialize the directory as a forge managed folder with the profile name
+            // Initialize the directory as a forge-managed folder with the profile name
             cli::commands::init_command(Some(profile), Some(path.as_path()));
         }
         Some(Commands::Profile { action }) => match action {
@@ -375,6 +381,9 @@ fn main() {
             target,
         }) => {
             cli::commands::pack::explain_pack(archive, *install, *restore, target.as_deref());
+        }
+        Some(Commands::Check { scope }) => {
+            cli::commands::pack::check_manifest_command(scope.as_deref());
         }
         None => {
             if cli.interactive {
@@ -512,7 +521,7 @@ mod tests {
             let test_file = temp.child("test_file");
             test_file.touch().unwrap();
 
-            // Initialize forge repository first
+            // Initialize the forge repository first
             let mut init_cmd = Command::cargo_bin("forge").unwrap();
             init_cmd.arg("init").current_dir(temp.path());
             init_cmd.assert().success();

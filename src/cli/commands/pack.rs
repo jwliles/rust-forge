@@ -120,9 +120,8 @@ fn start_packing_impl(scope: &str) -> Result<()> {
         ));
     }
 
-    // Create staging directory structure
-    let files_dir = staging_dir.join("files");
-    fs::create_dir_all(&files_dir)?;
+    // Create staging directory (only for manifest, no files/ subdirectory)
+    fs::create_dir_all(&staging_dir)?;
 
     // Create initial manifest
     let manifest = PackManifest::new(scope);
@@ -206,7 +205,6 @@ fn pack_files_impl(
         PackManifest::new(scope)
     };
 
-    let files_dir = staging_dir.join("files");
     let mut added_count = 0;
 
     // Collect all files to process (including from directories if recursive)
@@ -301,10 +299,9 @@ fn pack_files_impl(
 
     // Process all collected files
     for (abs_source, relative_path) in files_to_process {
-        let target_in_pack = files_dir.join(&relative_path);
-
-        // Check if already exists
-        if target_in_pack.exists() {
+        // Check if already in manifest
+        let source_key = abs_source.to_string_lossy().to_string();
+        if manifest.files.contains_key(&source_key) {
             if dry_run {
                 println!("Would skip (already in pack): {}", relative_path.display());
             } else {
@@ -323,14 +320,8 @@ fn pack_files_impl(
             continue;
         }
 
-        // Copy file to pack
-        if let Some(parent) = target_in_pack.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::copy(&abs_source, &target_in_pack)?;
-
-        // Calculate hash
-        let hash = calculate_file_hash(&target_in_pack)?;
+        // Calculate hash of source file (no copying)
+        let hash = calculate_file_hash(&abs_source)?;
 
         // Add to manifest
         manifest.add_file(&abs_source, &relative_path, Some(hash))?;
@@ -357,6 +348,48 @@ fn calculate_file_hash(path: &Path) -> Result<String> {
     let content = fs::read(path)?;
     let hash = blake3::hash(&content);
     Ok(hash.to_hex().to_string())
+}
+
+/// Validate all files in manifest match their recorded hashes
+/// Returns: (valid_files, invalid_files, missing_files)
+fn validate_manifest_files(
+    manifest: &PackManifest,
+) -> Result<(Vec<String>, Vec<String>, Vec<String>)> {
+    let mut valid_files = Vec::new();
+    let mut invalid_files = Vec::new();
+    let mut missing_files = Vec::new();
+
+    for (source_path, pack_file) in &manifest.files {
+        let path = Path::new(source_path);
+
+        // Check if file exists
+        if !path.exists() {
+            missing_files.push(source_path.clone());
+            continue;
+        }
+
+        // Recompute hash
+        match calculate_file_hash(path) {
+            Ok(current_hash) => {
+                if let Some(expected_hash) = &pack_file.hash {
+                    if &current_hash == expected_hash {
+                        valid_files.push(source_path.clone());
+                    } else {
+                        invalid_files.push(source_path.clone());
+                    }
+                } else {
+                    // No hash in manifest (shouldn't happen, but treat as valid)
+                    valid_files.push(source_path.clone());
+                }
+            }
+            Err(e) => {
+                eprintln!("Error hashing {}: {}", source_path, e);
+                invalid_files.push(source_path.clone());
+            }
+        }
+    }
+
+    Ok((valid_files, invalid_files, missing_files))
 }
 
 /// Seal a pack into a portable archive
@@ -388,6 +421,7 @@ pub fn seal_pack(scope: Option<&str>) {
         }
         Err(e) => {
             eprintln!("Failed to seal pack: {}", e);
+            std::process::exit(1);
         }
     }
 }
@@ -403,6 +437,51 @@ fn seal_pack_impl(scope: &str) -> Result<PathBuf> {
         ));
     }
 
+    // Load manifest
+    let manifest_path = staging_dir.join("manifest.toml");
+    if !manifest_path.exists() {
+        return Err(anyhow!("Pack manifest not found for '{}'", scope));
+    }
+
+    let manifest_content = fs::read_to_string(&manifest_path)?;
+    let manifest: PackManifest = toml::from_str(&manifest_content)?;
+
+    // Validate all files before sealing
+    println!("Validating files before sealing...");
+    let (valid_files, invalid_files, missing_files) = validate_manifest_files(&manifest)?;
+
+    // Report validation results
+    if !invalid_files.is_empty() || !missing_files.is_empty() {
+        eprintln!("\n❌ Seal aborted: Files have changed since packing\n");
+
+        if !missing_files.is_empty() {
+            eprintln!("Missing files ({}):", missing_files.len());
+            for file in &missing_files {
+                eprintln!("  ✗ {} - MISSING", file);
+            }
+        }
+
+        if !invalid_files.is_empty() {
+            eprintln!("\nModified files ({}):", invalid_files.len());
+            for file in &invalid_files {
+                eprintln!("  ✗ {} - MODIFIED (hash mismatch)", file);
+            }
+        }
+
+        eprintln!(
+            "\nTo see detailed status, run: forge check --scope {}",
+            scope
+        );
+        eprintln!("To update the pack with current file versions, run: forge pack <files>");
+
+        return Err(anyhow!(
+            "{} file(s) modified or missing since packing",
+            invalid_files.len() + missing_files.len()
+        ));
+    }
+
+    println!("✓ All {} files validated successfully", valid_files.len());
+
     // Create archives directory
     let archives_dir = get_pack_archives_dir()?;
     fs::create_dir_all(&archives_dir)?;
@@ -413,8 +492,8 @@ fn seal_pack_impl(scope: &str) -> Result<PathBuf> {
     let archive_name = format!("{}-{}.zip", scope, timestamp);
     let archive_path = archives_dir.join(&archive_name);
 
-    // Create ZIP archive
-    create_zip_archive(&staging_dir, &archive_path)?;
+    // Create ZIP archive from source files
+    create_zip_archive(&manifest, &archive_path)?;
 
     // Clean up staging directory
     fs::remove_dir_all(&staging_dir)?;
@@ -423,8 +502,8 @@ fn seal_pack_impl(scope: &str) -> Result<PathBuf> {
     Ok(archive_path)
 }
 
-/// Create a ZIP archive from the staging directory
-fn create_zip_archive(staging_dir: &Path, archive_path: &Path) -> Result<()> {
+/// Create a ZIP archive from source files using manifest
+fn create_zip_archive(manifest: &PackManifest, archive_path: &Path) -> Result<()> {
     use std::io::Write;
     use zip::write::FileOptions;
 
@@ -435,29 +514,19 @@ fn create_zip_archive(staging_dir: &Path, archive_path: &Path) -> Result<()> {
         .unix_permissions(0o755);
 
     // Add manifest
-    let manifest_path = staging_dir.join("manifest.toml");
-    if manifest_path.exists() {
-        zip.start_file("manifest.toml", options)?;
-        let manifest_content = fs::read(&manifest_path)?;
-        zip.write_all(&manifest_content)?;
-    }
+    let manifest_content = toml::to_string_pretty(manifest)?;
+    zip.start_file("manifest.toml", options)?;
+    zip.write_all(manifest_content.as_bytes())?;
 
-    // Add all files from files/ directory
-    let files_dir = staging_dir.join("files");
-    if files_dir.exists() {
-        for entry in walkdir::WalkDir::new(&files_dir) {
-            let entry = entry?;
-            let path = entry.path();
+    // Add all files from their source locations
+    for pack_file in manifest.files.values() {
+        let source_path = Path::new(&pack_file.target_path);
+        let zip_path = format!("files/{}", pack_file.relative_path);
 
-            if path.is_file() {
-                let relative_path = path.strip_prefix(&files_dir)?;
-                let zip_path = format!("files/{}", relative_path.to_string_lossy());
-
-                zip.start_file(&zip_path, options)?;
-                let content = fs::read(path)?;
-                zip.write_all(&content)?;
-            }
-        }
+        // Read file from source location and add to ZIP
+        zip.start_file(&zip_path, options)?;
+        let content = fs::read(source_path)?;
+        zip.write_all(&content)?;
     }
 
     zip.finish()?;
@@ -990,21 +1059,15 @@ fn unpack_files_impl(files: &[PathBuf], scope: &str) -> Result<usize> {
         return Err(anyhow!("Pack manifest not found"));
     };
 
-    let files_dir = staging_dir.join("files");
     let mut removed_count = 0;
 
     for file in files {
         let abs_path = path_utils::normalize(file);
         let key = abs_path.to_string_lossy().to_string();
 
-        if let Some(pack_file) = manifest.files.remove(&key) {
-            let file_in_pack = files_dir.join(&pack_file.relative_path);
-
-            if file_in_pack.exists() {
-                fs::remove_file(&file_in_pack)?;
-                println!("Removed from pack: {}", pack_file.relative_path);
-                removed_count += 1;
-            }
+        if manifest.files.remove(&key).is_some() {
+            println!("Removed from pack manifest: {}", abs_path.display());
+            removed_count += 1;
         } else {
             println!("File not found in pack: {}", abs_path.display());
         }
@@ -1015,6 +1078,108 @@ fn unpack_files_impl(files: &[PathBuf], scope: &str) -> Result<usize> {
     fs::write(&manifest_path, manifest_content)?;
 
     Ok(removed_count)
+}
+
+/// Check manifest integrity for a pack
+pub fn check_manifest_command(scope: Option<&str>) {
+    let default_scope;
+    let scope = match scope {
+        Some(s) => s,
+        None => match get_default_scope() {
+            Ok(s) => {
+                default_scope = s;
+                &default_scope
+            }
+            Err(_) => {
+                eprintln!("Could not determine scope. Please specify with --scope");
+                return;
+            }
+        },
+    };
+
+    println!("Checking manifest for pack: {}", scope);
+
+    match check_manifest_impl(scope) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Failed to check manifest: {}", e);
+        }
+    }
+}
+
+fn check_manifest_impl(scope: &str) -> Result<()> {
+    let staging_dir = get_pack_staging_dir(scope)?;
+
+    if !staging_dir.exists() {
+        return Err(anyhow!(
+            "Pack '{}' does not exist. Use 'forge start packing {}' first.",
+            scope,
+            scope
+        ));
+    }
+
+    // Load manifest
+    let manifest_path = staging_dir.join("manifest.toml");
+    if !manifest_path.exists() {
+        return Err(anyhow!("Pack manifest not found for '{}'", scope));
+    }
+
+    let manifest_content = fs::read_to_string(&manifest_path)?;
+    let manifest: PackManifest = toml::from_str(&manifest_content)?;
+
+    if manifest.files.is_empty() {
+        println!("Pack '{}' is empty (no files added yet)", scope);
+        return Ok(());
+    }
+
+    // Validate all files
+    let (valid_files, invalid_files, missing_files) = validate_manifest_files(&manifest)?;
+
+    // Print results
+    println!("\n📊 Pack Status for '{}':", scope);
+    println!("   Total files: {}", manifest.files.len());
+    println!();
+
+    if !valid_files.is_empty() {
+        println!("✓ Unchanged files ({}):", valid_files.len());
+        for file in &valid_files {
+            println!("  ✓ {}", file);
+        }
+        println!();
+    }
+
+    if !invalid_files.is_empty() {
+        println!("✗ Modified files ({}):", invalid_files.len());
+        for file in &invalid_files {
+            println!("  ✗ {} - MODIFIED (hash mismatch)", file);
+        }
+        println!();
+    }
+
+    if !missing_files.is_empty() {
+        println!("✗ Missing files ({}):", missing_files.len());
+        for file in &missing_files {
+            println!("  ✗ {} - MISSING", file);
+        }
+        println!();
+    }
+
+    // Summary
+    if invalid_files.is_empty() && missing_files.is_empty() {
+        println!("✅ All files are unchanged and ready to seal");
+    } else {
+        println!(
+            "⚠️  {} file(s) have changed since packing",
+            invalid_files.len() + missing_files.len()
+        );
+        println!("\nTo update the pack with current file versions:");
+        println!("  forge pack <files>");
+        println!("\nOr to seal with only unchanged files:");
+        println!("  forge unpack <changed-files>");
+        println!("  forge seal --scope {}", scope);
+    }
+
+    Ok(())
 }
 
 /// Explain pack contents and installation plan
