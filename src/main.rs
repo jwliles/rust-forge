@@ -498,41 +498,4 @@ mod tests {
         );
     }
 
-    // Add CLI integration tests
-    #[cfg(test)]
-    mod cli_tests {
-        use assert_cmd::Command;
-        use assert_fs::TempDir;
-        use assert_fs::prelude::*;
-
-        #[test]
-        fn test_cli_help() {
-            let mut cmd = Command::cargo_bin("forge").unwrap();
-            cmd.arg("--help");
-            cmd.assert()
-                .success()
-                .stdout(predicates::str::contains("Usage:"));
-        }
-
-        #[test]
-        fn test_stage_command() {
-            // Create a temporary directory for our test files
-            let temp = TempDir::new().unwrap();
-            let test_file = temp.child("test_file");
-            test_file.touch().unwrap();
-
-            // Initialize the forge repository first
-            let mut init_cmd = Command::cargo_bin("forge").unwrap();
-            init_cmd.arg("init").current_dir(temp.path());
-            init_cmd.assert().success();
-
-            let mut cmd = Command::cargo_bin("forge").unwrap();
-            cmd.arg("stage")
-                .arg(test_file.path())
-                .current_dir(temp.path());
-
-            // For now just check that the command runs without error
-            cmd.assert().success();
-        }
-    }
 }

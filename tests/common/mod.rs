@@ -47,7 +47,17 @@ impl TestContext {
 
     /// Create a forge command with this test's isolated database
     pub fn forge_cmd(&self) -> Command {
-        let mut cmd = Command::cargo_bin("forge").expect("Failed to find forge binary");
+        let bin_path = std::env::var("CARGO_BIN_EXE_forge")
+            .map(std::path::PathBuf::from)
+            .ok()
+            .filter(|p| p.exists())
+            .unwrap_or_else(|| {
+                // CARGO_BIN_EXE_forge points to wrong location when CARGO_BUILD_BUILD_DIR
+                // is set (Cargo bug: binary stays in target/debug/, not build/debug/)
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("target/debug/forge")
+            });
+        let mut cmd = Command::new(bin_path);
         cmd.env("FORGE_TEST_DB", &self.db_path);
         cmd.env("FORGE_TEST_CONFIG_DIR", &self.config_path);
         cmd
