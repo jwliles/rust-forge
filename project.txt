@@ -1,0 +1,77 @@
+## SECTION: DIRECTORIES
+D0 - docs
+D0 - src
+-----------------------------
+D1 - docs/development
+D1 - docs/getting-started
+D1 - docs/mkdocs-backup
+D1 - docs/src
+D1 - docs/theme
+D1 - src/cli
+D1 - src/config
+D1 - src/dotfile
+D1 - src/scanner
+D1 - src/symlink
+D1 - src/utils
+-----------------------------
+D2 - docs/src/features
+D2 - docs/src/getting-started
+D2 - src/cli/commands
+-----------------------------
+
+## SECTION: FILES
+F0 - BUGS.md  # 6460 bytes
+F0 - CHANGELOG.md  # 5018 bytes
+F0 - CONTRIBUTING.md  # 3238 bytes
+F0 - Cargo.lock  # 43504 bytes
+F0 - Cargo.toml  # 992 bytes
+F0 - LICENSE  # 35149 bytes
+F0 - MANUAL.md  # 14397 bytes
+F0 - README.md  # 14611 bytes
+F0 - RELEASE_NOTES_v0.4.0.md  # 1571 bytes
+F0 - build.rs  # 399 bytes
+F0 - diff_feature_proposal.md  # 8797 bytes
+F0 - forge.1  # 26655 bytes
+F0 - forge.md  # 14611 bytes
+F0 - forge.svg  # 7575 bytes
+F0 - pack_and_go_design.md  # 4097 bytes
+F0 - pack_and_go_timeline.md  # 3933 bytes
+F0 - project.txt [EMPTY]
+F0 - rust-forge.geany  # 611 bytes
+-----------------------------
+F1 - docs/book.toml  # 809 bytes
+F1 - docs/index.md  # 1289 bytes
+F1 - docs/requirements.txt  # 60 bytes
+F1 - src/lib.rs  # 181 bytes
+F1 - src/main.rs  # 15787 bytes
+-----------------------------
+F2 - docs/development/project-structure.md  # 2071 bytes
+F2 - docs/getting-started/installation.md  # 731 bytes
+F2 - docs/mkdocs-backup/mkdocs.yml  # 1054 bytes
+F2 - docs/src/SUMMARY.md  # 1180 bytes
+F2 - docs/src/changelog.md  # 5018 bytes
+F2 - docs/src/introduction.md  # 2270 bytes
+F2 - docs/src/roadmap.md  # 228 bytes
+F2 - docs/theme/custom.css  # 828 bytes
+F2 - src/cli/commands.rs  # 49749 bytes
+F2 - src/cli/mod.rs  # 18 bytes
+F2 - src/config/mod.rs  # 33113 bytes
+F2 - src/dotfile/backup.rs  # 350 bytes
+F2 - src/dotfile/link.rs  # 833 bytes
+F2 - src/dotfile/list.rs  # 1086 bytes
+F2 - src/dotfile/mod.rs  # 1223 bytes
+F2 - src/dotfile/unlink.rs  # 636 bytes
+F2 - src/scanner/mod.rs  # 792 bytes
+F2 - src/symlink/mod.rs  # 3827 bytes
+F2 - src/utils/mod.rs  # 32 bytes
+F2 - src/utils/path_utils.rs  # 1867 bytes
+F2 - src/utils/ui.rs  # 1347 bytes
+-----------------------------
+F3 - docs/src/features/overview.md  # 229 bytes
+-----------------------------
+F3 - docs/src/getting-started/basic-usage.md  # 232 bytes
+F3 - docs/src/getting-started/installation.md  # 233 bytes
+F3 - docs/src/getting-started/quick-start.md  # 232 bytes
+-----------------------------
+F3 - src/cli/commands/pack.rs  # 42162 bytes
+-----------------------------

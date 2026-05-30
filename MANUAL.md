@@ -1,11 +1,3 @@
----
-date_created: 2025-10-05T16-06-33
-date_updated: 2025-10-05T16-06-33
-timestamp: 1759680393826
-title: MANUAL
-id: c6a156a7-e435-44c9-916f-553012486028
-hash: 5fc8be218199d47b6f4ed00cfb364e96c08b939febd7a2c477f009faef46b066
----
 # Forge Manual
 
 **FORGE(1)** - User Commands - **forge 0.5.1** - October 2025
@@ -47,6 +39,10 @@ List tracked files or available profiles. Without options, shows all tracked fil
 
 ### File Management
 
+#### unstage *FILES*... [**-r**|**--recursive**] [**--depth** *N*]
+
+Unstage staged files by target path. Removes staged tracking entries from the database and removes any staging symlinks without deleting original files. With **--recursive**, processes directories recursively. With **--depth** *N*, limits recursion to N levels.
+
 #### stage *FILES*... [**-r**|**--recursive**] [**--depth** *N*]
 
 Stage files or directories for tracking. Creates temporary symlinks from the forge directory to original files. Files remain in original locations until **link** is called. With **--recursive**, processes directories recursively to unlimited depth. With **--depth** *N*, limits recursion to N levels (overrides **--recursive**). Preserves directory structure in forge repository. Updates SQLite database with staged status.
@@ -66,6 +62,10 @@ Remove files from forge tracking completely. Restores original files to their lo
 #### delete *FILES*... [**-y**|**--yes**]
 
 Delete files completely from the system. Removes files from both forge directory and original locations, and removes database entries. This is a destructive operation that cannot be undone. Requires explicit confirmation unless **--yes** is specified.
+
+#### purge [*FOLDER*] [**-r**|**--recursive**]
+
+Purge all dotfile records and managed files for a folder, restoring originals to prevent data loss. If *FOLDER* is not specified, uses the active managed folder. Restores original files to their tracked source locations before removing database entries. With **--recursive** (default: true), processes subfolders recursively. This is a destructive operation that removes forge tracking for all files in the folder.
 
 ### Profile Management
 
@@ -114,6 +114,10 @@ Restore a sealed pack to original absolute paths on current system. Used for con
 #### explain *ARCHIVE* [**--install**] [**--restore**] [**-t**|**--target** *DIRECTORY*]
 
 Analyze pack contents and show detailed installation/restoration plans. Extracts manifest without installing files. Shows pack metadata (scope, creation date, file count, total size), complete file listing with paths and hash previews, and installation plans with conflict detection. By default shows both install and restore plans. With **--install**, shows only installation plan. With **--restore**, shows only restoration plan. With **--target**, previews installation to specific directory.
+
+#### check [**-s**|**--scope** *SCOPE*]
+
+Check pack manifest integrity and show file status. Verifies that all files listed in the manifest are present in the pack staging area and that their BLAKE3 hashes match. Reports any missing files or hash mismatches. If **--scope** is not specified, uses the current directory name as scope.
 
 #### repack [**-s**|**--scope** *SCOPE*] [*FILES*...]
 

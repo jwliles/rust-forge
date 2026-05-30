@@ -3,6 +3,7 @@
 forge \- a powerful symlink management tool with pack-and-go configuration bundles
 .SH SYNOPSIS
 .B forge
+[\fB\-v\fR|\fB\-\-verbose\fR]
 [\fB\-I\fR|\fB\-\-interactive\fR]
 [\fB\-h\fR|\fB\-\-help\fR]
 [\fB\-V\fR|\fB\-\-version\fR]
@@ -30,6 +31,11 @@ Initialize a directory as a forge managed folder. Creates .forge subdirectory an
 List tracked files or available profiles. Without options, shows all tracked files in the current repository with their status (staged, linked, unlinked). With \fB\-\-profiles\fR, lists all available profiles. With \fB\-\-profile\fR \fINAME\fR, shows files only in the specified profile.
 .SS File Management
 .TP
+.B unstage \fIFILES\fR...
+[\fB\-r\fR|\fB\-\-recursive\fR]
+[\fB\-\-depth\fR \fIN\fR]
+Unstage staged files by target path. Removes staged tracking entries from the database and removes staging symlinks without deleting original files. With \fB\-\-recursive\fR, processes directories recursively. With \fB\-\-depth\fR \fIN\fR, limits recursion to N levels.
+.TP
 .B stage \fIFILES\fR...
 [\fB\-r\fR|\fB\-\-recursive\fR]
 [\fB\-\-depth\fR \fIN\fR]
@@ -50,6 +56,11 @@ Remove files from forge tracking completely. Restores original files to their lo
 .B delete \fIFILES\fR...
 [\fB\-y\fR|\fB\-\-yes\fR]
 Delete files completely from the system. Removes files from both forge directory and original locations, and removes database entries. This is a destructive operation that cannot be undone. Requires explicit confirmation unless \fB\-\-yes\fR is specified.
+.TP
+.B purge
+[\fIFOLDER\fR]
+[\fB\-r\fR|\fB\-\-recursive\fR]
+Purge all dotfile records and managed files for a folder, restoring originals to prevent data loss. If \fIFOLDER\fR is not specified, uses the active managed folder. Restores original files to their tracked source locations before removing database entries. With \fB\-\-recursive\fR (default: true), processes subfolders recursively.
 .SS Profile Management
 .TP
 .B switch \fINAME\fR
@@ -111,7 +122,14 @@ Update files in an existing pack staging area. If \fIFILES\fR are specified, rep
 .B unpack \fIFILES\fR...
 [\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
 Remove files from pack staging area. Removes specified files from pack directory and removes entries from manifest.toml. Does not affect files in their original locations. Pack remains active for additional files or sealing.
+.TP
+.B check
+[\fB\-s\fR|\fB\-\-scope\fR \fISCOPE\fR]
+Check pack manifest integrity and show file status. Verifies that all files listed in the manifest are present in the pack staging area and that their BLAKE3 hashes match. Reports any missing files or hash mismatches. If \fB\-\-scope\fR is not specified, uses the current directory name as scope.
 .SH OPTIONS
+.TP
+.B \-v, \-\-verbose
+Enable verbose output for debugging and troubleshooting. Prints additional details about operations, errors, and internal state.
 .TP
 .B \-I, \-\-interactive
 Use interactive mode (under development)
