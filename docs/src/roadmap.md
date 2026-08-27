@@ -1,8 +1,27 @@
 ---
 date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598162
+date_updated: 2026-05-30
 title: roadmap
-id: b768af2e-5212-4f58-9279-9a67bda5556b
-hash: af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262
 ---
+# Roadmap
+
+## Current Focus
+
+- Keep command documentation aligned with `src/main.rs`.
+- Improve failure handling and exit-code consistency.
+- Add transaction safety for multi-step file operations.
+
+## Planned
+
+- Interactive TUI for the reserved `-I`, `--interactive` mode.
+- Shell completion scripts.
+- More consistent rollback behavior when file operations fail partway through.
+- Broader pack install/restore tests for conflict and path-mapping behavior.
+
+## Already Implemented
+
+- Stage/link/unlink/remove/delete lifecycle commands.
+- Recursive and depth-limited staging.
+- Legacy profile commands plus `new`, `switch`, and `list --profiles`.
+- Pack-and-Go creation, checking, sealing, explaining, installing, restoring, repacking, and unpacking.
+- BLAKE3 hash checking for packed files.

@@ -1,8 +1,42 @@
 ---
 date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598162
+date_updated: 2026-05-30
 title: installation
-id: 23ab60ab-f7ff-4bd9-aff6-e728a152b075
-hash: af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262
 ---
+# Installation
+
+Install the published crate with Cargo:
+
+```bash
+cargo install forge-rs
+```
+
+The binary name is `forge`.
+
+Build from a local checkout:
+
+```bash
+cargo build
+cargo test
+```
+
+Print the installed version:
+
+```bash
+forge --version
+```
+
+## Global Flags
+
+- `-v`, `--verbose`: sets `FORGE_VERBOSE=1` for commands that emit additional diagnostic output.
+- `-I`, `--interactive`: starts placeholder interactive mode when no subcommand is provided. The TUI is not implemented yet.
+- `-h`, `--help`: prints help.
+- `-V`, `--version`: prints version information.
+
+Examples:
+
+```bash
+forge --help
+forge stage --help
+forge -v list
+```

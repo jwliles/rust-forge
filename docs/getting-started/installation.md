@@ -1,40 +1,42 @@
 ---
 date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598162
+date_updated: 2026-05-30
 title: installation
-id: fa974d16-ff55-4ba6-a74c-61eaf176d451
-hash: 822e65d4c7158243b40dac1f160110e49fb6c97d3b3c2d0d66134a21a00be1b1
 ---
 # Installation
 
-## From crates.io
-
-The recommended way to install Forge is through cargo:
+Install Forge from crates.io:
 
 ```bash
 cargo install forge-rs
 ```
 
-## From Source
+The installed binary is `forge`.
 
-You can also build and install from source:
+Build and install from a local checkout:
 
 ```bash
-# Clone the repository
-git clone https://github.com/jwliles/rust-forge.git
-cd rust-forge
-
-# Build and install
 cargo install --path .
 ```
 
-## Verifying Installation
-
-To verify that Forge is installed correctly, run:
+Verify the installation:
 
 ```bash
 forge --version
+forge --help
 ```
 
-You should see the version number of the installed Forge.
+## Global Flags
+
+- `-v`, `--verbose`: sets `FORGE_VERBOSE=1` for commands that emit additional diagnostic output.
+- `-I`, `--interactive`: starts placeholder interactive mode when no subcommand is provided. The TUI is not implemented yet.
+- `-h`, `--help`: prints help.
+- `-V`, `--version`: prints version information.
+
+Examples:
+
+```bash
+forge -v list
+forge stage --help
+forge install --help
+```
