@@ -54,8 +54,7 @@ impl TestContext {
             .unwrap_or_else(|| {
                 // CARGO_BIN_EXE_forge points to wrong location when CARGO_BUILD_BUILD_DIR
                 // is set (Cargo bug: binary stays in target/debug/, not build/debug/)
-                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("target/debug/forge")
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/debug/forge")
             });
         let mut cmd = Command::new(bin_path);
         cmd.env("FORGE_TEST_DB", &self.db_path);

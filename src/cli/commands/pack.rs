@@ -1005,8 +1005,7 @@ fn repack_files_impl(scope: &str, files: &[PathBuf]) -> Result<usize> {
         let content = fs::read_to_string(&manifest_path)?;
         let manifest: PackManifest = toml::from_str(&content)?;
 
-        let files_to_repack: Vec<PathBuf> =
-            manifest.files.keys().map(PathBuf::from).collect();
+        let files_to_repack: Vec<PathBuf> = manifest.files.keys().map(PathBuf::from).collect();
 
         pack_files_impl(&files_to_repack, scope, false, None, false)
     } else {
