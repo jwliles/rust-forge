@@ -1,136 +1,100 @@
 # Forge Roadmap
 
-This document consolidates the Pack-and-Go development timeline and the managed-folder reconciliation requests. Timeline checkmarks are historical status claims, not a fresh verification of the implementation. Phase 6 includes follow-up work despite its original completed marker.
+## Correctness and reliability
 
-The proposed pack diff is documented in [DESIGN.md](DESIGN.md); pack-baseline comparison and reconciliation between original and managed locations are separate concerns.
+Address the findings in [BUGS.md](BUGS.md) in this order:
 
-### Forge Pack-and-Go – Development Timeline
+1. Prevent data loss in unlink/remove and restore originals when linking fails.
+2. Reject ZIP entries and manifest payload paths that escape their intended directories.
+3. Give each sealed archive a unique name and prevent overwriting existing snapshots.
+4. Make purge preserve tracking after failures and restrict selection to the requested folder.
+5. Make repack refresh existing manifest entries and hashes.
+6. Correct parent-directory path normalization and unify tracked-file lookup.
+7. Create archives atomically from content that matches the manifest hashes.
+8. Return nonzero exit statuses for failed or incomplete commands.
+9. Make selective and bulk unstage perform the same filesystem and database transitions.
+10. Coordinate filesystem and database changes with rollback, report traversal failures, and define directory and record states consistently.
+11. Add regression tests for round trips, injected failures, archive containment, path selection, and snapshot preservation; resolve test lint failures.
 
-#### Overview
-This timeline records the implemented Pack-and-Go path and remaining follow-up work. The current implementation uses manifest-only staging: `forge pack` records source paths, relative archive paths, metadata, and BLAKE3 hashes; `forge seal` validates source files and creates the ZIP archive.
+## Pack-and-Go
 
----
+### Implemented foundation
 
-#### ✅ Phase 1: Foundation & Staging (Week 1)
-**Goal:** Create and populate pack staging areas with intent and precision.
+- Deliberate pack creation with `forge start packing <scope>`.
+- Manifest staging at `.forge/tmp/pack/<scope>/manifest.toml`.
+- Source paths, archive-relative paths, sizes, modified times, and BLAKE3 hashes recorded by `forge pack`.
+- Manifest checking with `forge check --scope <scope>`.
+- Source validation and ZIP creation with `forge seal`, including the manifest.
+- Active staging cleanup after a successful seal.
+- Install and restore with `--force`, `--skip-existing`, and `--dry-run` options.
+- Manifest membership removal with `forge unpack`.
+- Archive inspection and install/restore planning with `forge explain`.
 
-- Implement `forge start packing <scope>`
-- Create `.forge/tmp/pack/<scope>/manifest.toml`
-- Implement `forge pack <file>` with source-path recording and BLAKE3 hashing
-- Populate manifest entries with target path, relative archive path, size, modified time, and hash
+### Planned improvements
 
-**Note:** Intentional command friction (`start packing`) prevents misuse.
-
----
-
-#### ✅ Phase 2: Sealing & Cleanup (Week 2)
-**Goal:** Let users convert staged packs into portable archives.
-
-- Implement `forge seal`
-  - Validate manifest hashes against source files
-  - ZIP source files as `.forge/archives/<scope>-YYYY-MM-DD.zip`
-  - Include `manifest.toml` in the archive
-- Delete staging folder (`.forge/tmp/pack/<scope>`) after sealing
-
-**Note:** Sealing removes the active staging directory. Repacking applies to active, unsealed pack manifests.
-
----
-
-#### ✅ Phase 3: Installation (Week 3)
-**Goal:** Allow users to extract and use packs on other systems.
-
-- Implement `forge install <archive.zip>`
-  - Extract archive
-  - Read `manifest.toml`
-  - Copy files to calculated target paths
-- Conflict handling with `--force`, `--skip-existing`, and `--dry-run`
-
-**Note:** First major cross-system usage milestone.
-
----
-
-#### ✅ Phase 4: Hashing & Validation (Week 4)
-**Goal:** Ensure integrity and support future reproducibility.
-
-- Add BLAKE3 hashes to `manifest.toml`
-- Implement `forge check --scope <scope>`
-- Validate hashes during seal, install, and restore
-- Detect and report mismatches
-
-**Note:** Inspired by `gen_readme`, `cargo`, and Vim's `:checkhealth`.
-
----
-
-#### ✅ Phase 5: Repack, Unpack, UX (Week 5)
-**Goal:** Improve staging workflow and CLI usability.
-
-- Implement `forge repack --scope <scope>` (refresh manifest entries from disk)
-- Implement `forge unpack --scope <scope> <file>` (remove file from pack manifest)
-- Add explain/install/restore planning output
-- Polish messages, logs, and CLI help output
-
-**Note:** This phase completes the loop of pack creation, revision, and finalization.
-
----
-
-#### ✅ Phase 6: Robustness & Extras (Week 6+)
-**Goal:** Stretch goals and production hardening.
-
-- More consistent nonzero exit behavior for recoverable command failures
-- Rich conflict handling (`git_origin`, file diff, symlink collision)
-- Additional `--dry-run` coverage where useful
-- GUI integration (Command Assistant, scope switcher)
-- Support for `forge sign` (GPG signature generation)
-
-**Note:** Prepare Forge for GUI-first users and broader adoption.
-
----
-
-#### 🚧 Dev Risk "Parking Lot"
-These features are valuable but deferred until core implementation is stable:
-
-- Optional hardlinking during archive creation (optimization)
-- Deduplication support
-- Pack encryption (`age`, GPG symmetric)
-- Multi-pack orchestration
-- GUI manifest editor
-
----
-
-#### 📦 Summary Table
-| Week | Focus                         | Key Deliverables                     |
-|------|-------------------------------|--------------------------------------|
-| 1    | Start packing & manifest staging | `start packing`, `pack`, manifest |
-| 2    | Sealing & cleanup            | `seal`, archive structure, purge tmp |
-| 3    | Install/restore               | `install`, `restore`, conflict flags |
-| 4    | Integrity                     | `check`, manifest validation         |
-| 5    | UX & control                  | `repack`, `unpack`, `explain`, polish |
-| 6+   | Extras                        | Signing, GUI, robustness             |
+- Complete the documented repack workflow by refreshing hashes and metadata from disk.
+- Detect payload and destination collisions before installation or restoration.
+- Expand conflict handling for Git origins, file differences, and symlink collisions.
+- Extend dry-run coverage and improve command messages and help.
+- Add a command to cancel an active pack without affecting sealed archives.
+- Record install receipts to support safe removal of installed files.
+- Stream file hashing and produce deterministic manifest and archive ordering.
 
 ## Forge fixes
 
-Forge needs several fixes, improvements, and workflow changes.
-
 ### Reverse adoption from the Forge-managed folder
 
-Forge currently does not add new files back to the original location. For example, if I add my Espanso files to Forge and later create or edit files inside the Forge-managed folder, Forge will not create corresponding symlinks back into the Espanso directory.
+Add an explicit command to create missing original-location symlinks for files
+created inside the managed folder. Users should be able to add new Espanso
+configuration files in the managed tree and link them back without first moving
+them into the original tree and repeating `stage` and `link`.
 
-I do not think this should happen automatically by default, but Forge also lacks an explicit option for doing it when requested. The current workaround is to add the file directly to the Espanso directory, then run the normal `forge stage` and `forge link` workflow. That is consistent with Forge’s current source-of-truth model, but it feels unnecessarily ceremonial when the new file already exists inside the Forge-managed directory.
-
-Forge should have a command that checks the original location and creates missing symlinks for files that exist in the Forge-managed directory but not in the original directory.
+Keep reverse adoption manual by default.
 
 ### Propagating reorganization
 
-Forge also does not propagate reorganization of the Forge-managed folder back to the original folder. This is closely related to reverse adoption.
+Support explicit propagation of managed-folder renames, moves, and directory
+restructuring to original-location links and tracking records. Users should not
+have to repeat the same reorganization in both trees.
 
-Renames, moves, and directory restructuring performed inside the Forge-managed folder remain local to that folder. The user then has to repeat the same operations manually in the original folder. This weakens the utility of Forge because the managed folder is not really acting as a usable working location.
-
-This behavior should be available explicitly, but not automatic by default. A setting to enable automatic propagation could be useful, but the safer default should be a manual reconciliation command.
+Use manual reconciliation by default. An optional setting may enable automatic
+propagation.
 
 ### Reconciliation between original and managed folders
 
-Forge currently does not keep the original folder and Forge-managed folder in sync after the initial staging and linking workflow. Changes made on one side stay there, which allows the two locations to drift. One folder may have more or fewer files, a different directory structure, or files that no longer represent the same intended state.
+Provide a reconciliation command that previews divergence and applies requested
+changes between original and managed locations:
 
-Forge is meant to keep dotfiles, configuration files, and other managed files in good working order, but it currently lacks a reconciliation model for handling divergence between the original location and the Forge-managed location.
+- Identify files missing from either tree and missing original-location links.
+- Identify differences in directory structure and tracked mappings.
+- Report conflicting states before applying changes.
+- Create missing links and update mappings for approved reorganizations.
+- Preserve enough state to recover from a failed apply operation.
 
-Source of reconciliation requests: Justin Wayne Liles, June 26, 2026, 19:36 (formerly `fixes.org`).
+## Change detection
+
+Add a read-only pack diff that reports added, modified, removed, and unchanged
+files using recorded hashes. Define the comparison baseline, scope membership,
+and managed-folder identity before implementation.
+
+Keep file contents, line-by-line diffs, historical reverts, and automatic packing
+outside the feature's scope. See the [draft design](DESIGN.md).
+
+## Profile and managed-folder lifecycle
+
+- Add safe unregister operations for managed folders and profiles.
+- Support profile renaming and make profile selection state explicit.
+- Define reversible transitions for staging, linking, and profile changes.
+
+## User interface and signing
+
+- Add GUI integration with a Command Assistant and scope switcher.
+- Add `forge sign` for GPG signature generation.
+
+## Deferred
+
+- Optional hardlinking during archive creation.
+- Deduplication.
+- Pack encryption with age or symmetric GPG.
+- Multi-pack orchestration.
+- GUI manifest editor.
