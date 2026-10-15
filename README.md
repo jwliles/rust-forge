@@ -342,3 +342,19 @@ forge unpack --scope my_dotfiles ~/.old_config
 ## License
 
 GPL-3.0-or-later.
+
+## Documentation
+
+- [MANUAL.md](MANUAL.md): command reference.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution and publishing workflow.
+- [AGENTS.md](AGENTS.md): repository instructions for coding agents.
+- [BUGS.md](BUGS.md): recorded bugs and historical fix status.
+- [CHANGELOG.md](CHANGELOG.md): version history and historical release preparation notes.
+- [DESIGN.md](DESIGN.md): Pack-and-Go design and the draft diff proposal.
+- [ROADMAP.md](ROADMAP.md): development timeline and reconciliation requests.
+
+The former `forge.md` was an identical copy of this README. Material from
+`pack_and_go_design.md` and `diff_feature_proposal.md` now lives in `DESIGN.md`;
+`pack_and_go_timeline.md` and `fixes.org` are consolidated in `ROADMAP.md`;
+`RELEASE_NOTES_v0.4.0.md` is preserved in `CHANGELOG.md`. Files under `docs/`
+remain unchanged and may still refer to these former root filenames.

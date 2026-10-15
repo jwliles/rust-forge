@@ -1,19 +1,17 @@
----
-date_created: 2025-10-03T02-46-38
-date_updated: 2026-05-30
-timestamp: 1759459598162
-title: pack_and_go_timeline
-id: 71e34789-3659-4b83-b124-7f9f5039b274
-hash: 68872dc9c2de74dc6ff7c112c68ee338ef0e48cfee5041bb805601cf15ef4bf0
----
-## Forge Pack-and-Go – Development Timeline
+# Forge Roadmap
 
-### Overview
+This document consolidates the Pack-and-Go development timeline and the managed-folder reconciliation requests. Timeline checkmarks are historical status claims, not a fresh verification of the implementation. Phase 6 includes follow-up work despite its original completed marker.
+
+The proposed pack diff is documented in [DESIGN.md](DESIGN.md); pack-baseline comparison and reconciliation between original and managed locations are separate concerns.
+
+### Forge Pack-and-Go – Development Timeline
+
+#### Overview
 This timeline records the implemented Pack-and-Go path and remaining follow-up work. The current implementation uses manifest-only staging: `forge pack` records source paths, relative archive paths, metadata, and BLAKE3 hashes; `forge seal` validates source files and creates the ZIP archive.
 
 ---
 
-### ✅ Phase 1: Foundation & Staging (Week 1)
+#### ✅ Phase 1: Foundation & Staging (Week 1)
 **Goal:** Create and populate pack staging areas with intent and precision.
 
 - Implement `forge start packing <scope>`
@@ -25,7 +23,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### ✅ Phase 2: Sealing & Cleanup (Week 2)
+#### ✅ Phase 2: Sealing & Cleanup (Week 2)
 **Goal:** Let users convert staged packs into portable archives.
 
 - Implement `forge seal`
@@ -38,7 +36,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### ✅ Phase 3: Installation (Week 3)
+#### ✅ Phase 3: Installation (Week 3)
 **Goal:** Allow users to extract and use packs on other systems.
 
 - Implement `forge install <archive.zip>`
@@ -51,7 +49,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### ✅ Phase 4: Hashing & Validation (Week 4)
+#### ✅ Phase 4: Hashing & Validation (Week 4)
 **Goal:** Ensure integrity and support future reproducibility.
 
 - Add BLAKE3 hashes to `manifest.toml`
@@ -63,7 +61,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### ✅ Phase 5: Repack, Unpack, UX (Week 5)
+#### ✅ Phase 5: Repack, Unpack, UX (Week 5)
 **Goal:** Improve staging workflow and CLI usability.
 
 - Implement `forge repack --scope <scope>` (refresh manifest entries from disk)
@@ -75,7 +73,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### ✅ Phase 6: Robustness & Extras (Week 6+)
+#### ✅ Phase 6: Robustness & Extras (Week 6+)
 **Goal:** Stretch goals and production hardening.
 
 - More consistent nonzero exit behavior for recoverable command failures
@@ -88,7 +86,7 @@ This timeline records the implemented Pack-and-Go path and remaining follow-up w
 
 ---
 
-### 🚧 Dev Risk "Parking Lot"
+#### 🚧 Dev Risk "Parking Lot"
 These features are valuable but deferred until core implementation is stable:
 
 - Optional hardlinking during archive creation (optimization)
@@ -99,7 +97,7 @@ These features are valuable but deferred until core implementation is stable:
 
 ---
 
-### 📦 Summary Table
+#### 📦 Summary Table
 | Week | Focus                         | Key Deliverables                     |
 |------|-------------------------------|--------------------------------------|
 | 1    | Start packing & manifest staging | `start packing`, `pack`, manifest |
@@ -108,3 +106,31 @@ These features are valuable but deferred until core implementation is stable:
 | 4    | Integrity                     | `check`, manifest validation         |
 | 5    | UX & control                  | `repack`, `unpack`, `explain`, polish |
 | 6+   | Extras                        | Signing, GUI, robustness             |
+
+## Forge fixes
+
+Forge needs several fixes, improvements, and workflow changes.
+
+### Reverse adoption from the Forge-managed folder
+
+Forge currently does not add new files back to the original location. For example, if I add my Espanso files to Forge and later create or edit files inside the Forge-managed folder, Forge will not create corresponding symlinks back into the Espanso directory.
+
+I do not think this should happen automatically by default, but Forge also lacks an explicit option for doing it when requested. The current workaround is to add the file directly to the Espanso directory, then run the normal `forge stage` and `forge link` workflow. That is consistent with Forge’s current source-of-truth model, but it feels unnecessarily ceremonial when the new file already exists inside the Forge-managed directory.
+
+Forge should have a command that checks the original location and creates missing symlinks for files that exist in the Forge-managed directory but not in the original directory.
+
+### Propagating reorganization
+
+Forge also does not propagate reorganization of the Forge-managed folder back to the original folder. This is closely related to reverse adoption.
+
+Renames, moves, and directory restructuring performed inside the Forge-managed folder remain local to that folder. The user then has to repeat the same operations manually in the original folder. This weakens the utility of Forge because the managed folder is not really acting as a usable working location.
+
+This behavior should be available explicitly, but not automatic by default. A setting to enable automatic propagation could be useful, but the safer default should be a manual reconciliation command.
+
+### Reconciliation between original and managed folders
+
+Forge currently does not keep the original folder and Forge-managed folder in sync after the initial staging and linking workflow. Changes made on one side stay there, which allows the two locations to drift. One folder may have more or fewer files, a different directory structure, or files that no longer represent the same intended state.
+
+Forge is meant to keep dotfiles, configuration files, and other managed files in good working order, but it currently lacks a reconciliation model for handling divergence between the original location and the Forge-managed location.
+
+Source of reconciliation requests: Justin Wayne Liles, June 26, 2026, 19:36 (formerly `fixes.org`).

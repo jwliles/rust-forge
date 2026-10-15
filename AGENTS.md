@@ -139,3 +139,4 @@ When making changes:
 - State which files changed.
 - State what validation was run and whether it passed.
 - Mention material limitations or unresolved issues without padding the response.
+- Do not use emojis, icons, or any pictographs. Text only is preferred.

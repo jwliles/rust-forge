@@ -1,8 +1,60 @@
-# Forge Diff Feature Proposal
+# Forge Design
+
+This document consolidates the Pack-and-Go design notes and the proposed diff feature. The Pack-and-Go notes describe the intended and recorded implementation as of May 2026; the diff feature remains a January 2026 draft, not an implemented command or an approved design.
+
+For command usage, see [MANUAL.md](MANUAL.md). For development plans, see [ROADMAP.md](ROADMAP.md). Recorded bugs are in [BUGS.md](BUGS.md).
+
+## Forge "Pack‑and‑Go" Profile Feature Expansion – Detailed Design Document
+
+*Version: Current implementation notes  ·  Last updated: 2026-05-30*
+
+> **Preface**
+> This document records the current Pack-and-Go implementation and the design intent behind it. Forge still requires `start packing` to make pack creation deliberate, but current staging is manifest-based: files are hashed and recorded during `forge pack`, then read from their source locations during `forge seal`.
+>
+> Forge treats configuration like code: we version, we validate, we audit. The manifest approach is inspired by Cargo. The deliberate actions model owes inspiration to Pijul’s patching system. And like any good system, Forge trades convenience for clarity where safety is concerned.
+>
+> This document is intentionally verbose so future contributors understand not just what Forge does, but why. All technical and UX decisions documented herein are up for review — but they’re not arbitrary.
+
+---
+
+### 0  Background & Motivation
+
+For years, advanced users have relied on ad‑hoc **dotfile repos**, fragile **setup scripts**, or heavy tools like **GNU Stow** to migrate personal configurations between machines. Forge already manages *linked* files (live profiles) via symlinks, but lacks a first‑class, portable **bundle** format.
+
+**Pack‑and‑Go** solves this by introducing a deliberate staging + sealing workflow inspired by the **patch theory of Pijul**.  The design embraces:
+
+- **Intentional actions** → you can’t accidentally create a pack.
+- **Absolute path fidelity** → no fake directory trees.
+- **Reproducibility & auditability** → manifests and BLAKE3 hashes.
+- **User learning** → GUI/CLI parity via Command Assistant.
+- **Transparent tradeoffs** → Manifest-only staging avoids temporary duplication, while `seal` validates that source files have not changed since packing.
+
+---
+
+### 1  Glossary (authoritative)
+
+| Term                  | Meaning                                                                           | Notes                                    |
+| --------------------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Pack**              | A named container of files the user wants to move/export.                         | Think "project" of configs.              |
+| **Scope**             | The identifier of a pack (for example, `my_dotfiles`).                            | Used in temp paths, manifests, archives. |
+| **Packing**           | *Verb*: Starting a new pack. Must be done with `forge start packing`.             | Prevents accidental creation.            |
+| **pack**              | *Verb*: Add one or more files to an *existing* pack.                              | `forge pack <file>`                      |
+| **Repack**            | Refresh manifest entries and hashes from current source files.                    | Does **not** re-seal.                    |
+| **Seal**              | Validate the manifest and write a timestamped `.zip`.                             | Aborts if source files changed/missing.  |
+| **Install**           | Extract a sealed pack to the current directory, a target directory, or mapped home paths. |                                  |
+| **Restore**           | Extract a sealed pack to the original absolute paths, or use `--test` for current-directory restore. |                         |
+| **Unpack**            | Remove a source path from an active pack manifest.                                |                                          |
+| **Inventory**         | Set of all files Forge currently manages (linked or staged).                      |                                          |
+| **Dry run**           | Preview a pack, install, or restore operation without writing files.              | `--dry-run` on supported commands.       |
+| **Hash**              | BLAKE3 per-file hash stored in the manifest.                                      | Used by `check`, `seal`, install, restore. |
+
+...
+
+## Forge Diff Feature Proposal
 
 *Version: Draft 0.1  ·  Date: 2026-01-02*
 
-## 0  Motivation
+### 0  Motivation
 
 Forge currently lacks visibility into what has changed in the managed folder since the last pack operation. Users may:
 - Edit dotfiles and forget what changed
@@ -11,7 +63,7 @@ Forge currently lacks visibility into what has changed in the managed folder sin
 
 A diff view would provide visibility into changes without turning Forge into a full VCS.
 
-## 1  Design Goals
+### 1  Design Goals
 
 **In scope:**
 - Show which files have been modified/added/removed since last pack
@@ -25,7 +77,7 @@ A diff view would provide visibility into changes without turning Forge into a f
 - Auto-pack automation (unnecessary complexity)
 - Change history over time (just current vs. last pack)
 
-## 2  Database Schema
+### 2  Database Schema
 
 Add a new table to track file snapshots at pack time:
 
@@ -46,32 +98,32 @@ CREATE TABLE file_snapshots (
 - No file content stored (just metadata)
 - Keyed by (scope, file_path) so each file has one current snapshot
 
-## 3  Command Syntax
+### 3  Command Syntax
 
-### Compare entire managed folder
+#### Compare entire managed folder
 ```bash
 forge diff .
 ```
 
 Compares all files in the active managed folder against the last pack for the default scope.
 
-### Compare specific file
+#### Compare specific file
 ```bash
 forge diff ~/.forge/.vimrc
 ```
 
 Shows whether the specific file has changed.
 
-### Compare against specific scope
+#### Compare against specific scope
 ```bash
 forge diff <file> --scope <name>
 ```
 
 Compare against a different scope's last pack.
 
-## 4  Output Format
+### 4  Output Format
 
-### Example: Changes detected
+#### Example: Changes detected
 ```
 $ forge diff .
 
@@ -97,7 +149,7 @@ Unchanged: 5 files
 Summary: 4 changes detected since last pack
 ```
 
-### Example: No changes
+#### Example: No changes
 ```
 $ forge diff .
 
@@ -108,7 +160,7 @@ No changes detected.
 All 7 files unchanged since last pack.
 ```
 
-### Example: No baseline
+#### Example: No baseline
 ```
 $ forge diff .
 
@@ -118,9 +170,9 @@ All files in managed folder (7 files) would be new.
 Run 'forge pack . -r' to create initial pack.
 ```
 
-## 5  Implementation Flow
+### 5  Implementation Flow
 
-### During `forge pack`
+#### During `forge pack`
 
 ```rust
 // After calculating hash for manifest (pack.rs:324)
@@ -138,7 +190,7 @@ store_file_snapshot(
 manifest.add_file(&abs_source, &relative_path, Some(hash))?;
 ```
 
-### During `forge diff`
+#### During `forge diff`
 
 ```rust
 fn diff_command(path: &Path, scope: Option<&str>) -> Result<()> {
@@ -190,9 +242,9 @@ fn diff_command(path: &Path, scope: Option<&str>) -> Result<()> {
 }
 ```
 
-## 6  Database Operations
+### 6  Database Operations
 
-### Store snapshot (on pack)
+#### Store snapshot (on pack)
 ```rust
 pub fn store_file_snapshot(
     scope: &str,
@@ -218,7 +270,7 @@ pub fn store_file_snapshot(
 }
 ```
 
-### Load snapshots (on diff)
+#### Load snapshots (on diff)
 ```rust
 pub fn load_snapshots_for_scope(
     scope: &str
@@ -254,9 +306,9 @@ pub fn load_snapshots_for_scope(
 }
 ```
 
-## 7  Migration Path
+### 7  Migration Path
 
-### Database migration
+#### Database migration
 Add migration to create the new table in existing databases:
 
 ```rust
@@ -274,7 +326,7 @@ conn.execute(
 )?;
 ```
 
-### Backfill existing packs
+#### Backfill existing packs
 For users with existing unsealed packs, run validation on first diff:
 
 ```rust
@@ -285,7 +337,7 @@ if snapshots.is_empty() && manifest_exists(scope) {
 }
 ```
 
-## 8  Bonus: Seal Warning
+### 8  Bonus: Seal Warning
 
 Optional enhancement to prevent redundant packs:
 
@@ -308,7 +360,7 @@ if snapshots_match_manifest(&snapshots, &manifest) {
 }
 ```
 
-## 9  Testing Considerations
+### 9  Testing Considerations
 
 - Test with empty managed folder (no snapshots)
 - Test with files added/modified/removed
@@ -319,14 +371,14 @@ if snapshots_match_manifest(&snapshots, &manifest) {
 - Test with symbolic links in managed folder
 - Verify performance with large file counts
 
-## 10  Open Questions
+### 10  Open Questions
 
 1. **Display verbosity**: Should unchanged files be collapsed by default or shown with `--verbose`?
 2. **Hash display**: Show full hash, truncated (8 chars), or hide entirely?
 3. **Timestamp display**: Show absolute time, relative ("3 days ago"), or both?
 4. **Integration with seal**: Make the warning mandatory or opt-in via flag?
 
-## 11  Summary
+### 11  Summary
 
 This feature adds lightweight change detection to Forge without turning it into a VCS. It:
 - Uses existing hash calculation infrastructure
