@@ -1,0 +1,306 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Basic Usage - Forge Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Comprehensive documentation for the Forge dotfile manager">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom.css">
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "ayu" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="spacer"></li><li class="chapter-item expanded affix "><li class="part-title">Summary</li><li class="chapter-item expanded affix "><li class="part-title">Getting Started</li><li class="chapter-item expanded "><a href="../getting-started/installation.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../getting-started/quick-start.html"><strong aria-hidden="true">2.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="../getting-started/basic-usage.html" class="active"><strong aria-hidden="true">3.</strong> Basic Usage</a></li><li class="chapter-item expanded affix "><li class="part-title">Features</li><li class="chapter-item expanded "><a href="../features/overview.html"><strong aria-hidden="true">4.</strong> Overview</a></li><li class="chapter-item expanded affix "><li class="part-title">Project Information</li><li class="chapter-item expanded "><a href="../roadmap.html"><strong aria-hidden="true">5.</strong> Roadmap</a></li><li class="chapter-item expanded "><a href="../changelog.html"><strong aria-hidden="true">6.</strong> Changelog</a></li><li class="chapter-item expanded affix "><li class="part-title">Development</li><li class="chapter-item expanded "><a href="../development/project-structure.html"><strong aria-hidden="true">7.</strong> Project Structure</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Forge Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/jwliles/rust-forge" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/jwliles/rust-forge/edit/main/docs/src/getting-started/basic-usage.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <hr />
+<h2>date_created: 2025-10-03T02-46-38
+date_updated: 2026-05-30
+title: basic-usage</h2>
+<h1 id="basic-usage"><a class="header" href="#basic-usage">Basic Usage</a></h1>
+<h2 id="repository-commands"><a class="header" href="#repository-commands">Repository Commands</a></h2>
+<pre><code class="language-bash">forge init
+forge init --name dotfiles --dir ~/dotfiles
+forge list
+forge list --profile work
+forge list --profiles
+</code></pre>
+<ul>
+<li><code>init --name &lt;NAME&gt;</code> names the managed folder.</li>
+<li><code>init --dir &lt;DIRECTORY&gt;</code> chooses the directory to initialize.</li>
+<li><code>list --profile &lt;NAME&gt;</code> filters tracked files by profile.</li>
+<li><code>list --profiles</code> lists legacy profiles.</li>
+</ul>
+<h2 id="file-lifecycle"><a class="header" href="#file-lifecycle">File Lifecycle</a></h2>
+<pre><code class="language-bash">forge stage ~/.vimrc ~/.bashrc
+forge stage --recursive ~/.config/nvim
+forge stage --depth 2 ~/.config
+forge link
+forge link ~/.vimrc
+</code></pre>
+<ul>
+<li><code>stage --recursive</code> includes all files under directory arguments.</li>
+<li><code>stage --depth &lt;N&gt;</code> limits directory traversal to <code>N</code> levels.</li>
+<li><code>link</code> with no arguments links all staged files.</li>
+<li><code>link &lt;FILES&gt;...</code> links only matching staged files.</li>
+</ul>
+<p>Undo or remove tracking:</p>
+<pre><code class="language-bash">forge unstage ~/.vimrc
+forge unstage --recursive ~/.config/nvim
+forge unlink --yes ~/.vimrc
+forge remove --yes ~/.old_config
+forge delete --yes ~/.obsolete_config
+forge purge ~/dotfiles
+</code></pre>
+<ul>
+<li><code>unstage --recursive</code> recursively matches staged files below a directory.</li>
+<li><code>unstage --depth &lt;N&gt;</code> limits recursive matching depth.</li>
+<li><code>unlink --yes</code>, <code>remove --yes</code>, and <code>delete --yes</code> skip confirmation prompts.</li>
+<li><code>purge --recursive</code> processes subfolders; this flag defaults to true in the current CLI.</li>
+</ul>
+<h2 id="profiles"><a class="header" href="#profiles">Profiles</a></h2>
+<pre><code class="language-bash">forge new --profile work ~/dotfiles/work
+forge switch work
+forge profile list
+</code></pre>
+<ul>
+<li><code>new --profile &lt;NAME&gt;</code> registers a named managed folder.</li>
+<li><code>switch &lt;NAME&gt;</code> activates a legacy profile from <code>~/.forge/profiles/&lt;NAME&gt;</code>.</li>
+<li><code>profile</code> subcommands are legacy compatibility commands.</li>
+</ul>
+<h2 id="packs"><a class="header" href="#packs">Packs</a></h2>
+<pre><code class="language-bash">forge start packing my_dotfiles
+forge pack --scope my_dotfiles ~/.vimrc
+forge pack --scope my_dotfiles --recursive ~/.config/nvim
+forge pack --scope my_dotfiles --depth 2 ~/.config
+forge pack --scope my_dotfiles --dry-run --recursive ~/.local/bin
+forge check --scope my_dotfiles
+forge seal --scope my_dotfiles
+</code></pre>
+<ul>
+<li><code>pack --scope &lt;SCOPE&gt;</code>, <code>check --scope &lt;SCOPE&gt;</code>, and <code>seal --scope &lt;SCOPE&gt;</code> select the active pack. The default scope is the current directory name.</li>
+<li><code>pack --recursive</code> includes all files under directory arguments.</li>
+<li><code>pack --depth &lt;N&gt;</code> limits directory traversal to <code>N</code> levels.</li>
+<li><code>pack --dry-run</code> previews manifest updates without writing.</li>
+</ul>
+<p>Install or restore sealed packs:</p>
+<pre><code class="language-bash">forge explain my_dotfiles-2026-05-30.zip
+forge explain my_dotfiles-2026-05-30.zip --install --target /tmp/test-home
+forge install my_dotfiles-2026-05-30.zip --dry-run
+forge install my_dotfiles-2026-05-30.zip --target ~/restored-config
+forge install my_dotfiles-2026-05-30.zip --map-home
+forge install my_dotfiles-2026-05-30.zip --force
+forge install my_dotfiles-2026-05-30.zip --skip-existing
+forge restore my_dotfiles-2026-05-30.zip --test
+forge restore my_dotfiles-2026-05-30.zip --dry-run
+</code></pre>
+<ul>
+<li><code>explain --install</code> shows only the install plan.</li>
+<li><code>explain --restore</code> shows only the restore plan.</li>
+<li><code>explain --target &lt;DIRECTORY&gt;</code> previews an install target.</li>
+<li><code>install --target &lt;DIRECTORY&gt;</code> writes under a target directory.</li>
+<li><code>install --map-home</code> maps home-directory paths to the current user's home.</li>
+<li><code>install --force</code> and <code>restore --force</code> overwrite conflicts.</li>
+<li><code>install --skip-existing</code> and <code>restore --skip-existing</code> skip conflicts.</li>
+<li><code>restore --test</code> restores by filename into the current directory.</li>
+<li><code>--dry-run</code> previews without writing.</li>
+</ul>
+<p>Maintain active packs:</p>
+<pre><code class="language-bash">forge repack --scope my_dotfiles ~/.vimrc
+forge repack --scope my_dotfiles
+forge unpack --scope my_dotfiles ~/.old_config
+</code></pre>
+<ul>
+<li><code>repack --scope &lt;SCOPE&gt;</code> refreshes manifest entries from disk.</li>
+<li><code>unpack --scope &lt;SCOPE&gt;</code> removes source paths from the manifest.</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting-started/quick-start.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../features/overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting-started/quick-start.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../features/overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
