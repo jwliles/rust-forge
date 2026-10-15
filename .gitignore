@@ -6,8 +6,7 @@
 /target/
 target/
 
-# Cargo lock (keep for binaries, ignore for libraries — adjust per project)
-Cargo.lock
+# Track Cargo.lock for reproducible builds of the forge binary.
 
 # Cargo home cache (if project-local)
 .cargo/

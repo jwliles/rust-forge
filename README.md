@@ -336,7 +336,7 @@ forge unpack --scope my_dotfiles ~/.old_config
 
 ## Requirements
 
-- Rust 1.65 or newer to build from source.
+- Rust 1.88 or newer to build from source.
 - GNU/Linux or another free operating system. Proprietary platforms are not officially tested.
 
 ## License

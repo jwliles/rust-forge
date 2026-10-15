@@ -1,0 +1,86 @@
+## SECTION: DIRECTORIES
+D0 - docs
+D0 - src
+D0 - tests
+-----------------------------
+D1 - docs/development
+D1 - docs/getting-started
+D1 - docs/mkdocs-backup
+D1 - docs/src
+D1 - docs/theme
+D1 - src/cli
+D1 - src/config
+D1 - src/dotfile
+D1 - src/scanner
+D1 - src/symlink
+D1 - src/utils
+D1 - tests/common
+-----------------------------
+D2 - docs/src/development
+D2 - docs/src/features
+D2 - docs/src/getting-started
+D2 - src/cli/commands
+-----------------------------
+
+## SECTION: FILES
+F0 - AGENTS.md  # 4762 bytes
+F0 - BUGS.md  # 14156 bytes
+F0 - CHANGELOG.md  # 6916 bytes
+F0 - CONTRIBUTING.md  # 3238 bytes
+F0 - Cargo.lock  # 30764 bytes
+F0 - Cargo.toml  # 960 bytes
+F0 - DESIGN.md  # 13342 bytes
+F0 - LICENSE  # 35149 bytes
+F0 - MANUAL.md  # 9887 bytes
+F0 - README.md  # 11381 bytes
+F0 - ROADMAP.md  # 4589 bytes
+F0 - build.rs  # 399 bytes
+F0 - forge.1  # 8423 bytes
+F0 - forge.svg  # 7575 bytes
+F0 - project.txt [EMPTY]
+-----------------------------
+F1 - docs/book.toml  # 809 bytes
+F1 - docs/index.md  # 1102 bytes
+F1 - docs/requirements.txt  # 60 bytes
+F1 - src/lib.rs  # 181 bytes
+F1 - src/main.rs  # 15786 bytes
+F1 - tests/core_commands.rs  # 8237 bytes
+F1 - tests/database_isolation.rs  # 5101 bytes
+F1 - tests/pack_and_go.rs  # 24047 bytes
+F1 - tests/path_utils.rs  # 4702 bytes
+F1 - tests/symlink_utils.rs  # 3772 bytes
+-----------------------------
+F2 - docs/development/project-structure.md  # 1644 bytes
+F2 - docs/getting-started/installation.md  # 747 bytes
+F2 - docs/mkdocs-backup/mkdocs.yml  # 1054 bytes
+F2 - docs/src/SUMMARY.md  # 483 bytes
+F2 - docs/src/changelog.md  # 5018 bytes
+F2 - docs/src/introduction.md  # 1265 bytes
+F2 - docs/src/roadmap.md  # 873 bytes
+F2 - docs/theme/custom.css  # 828 bytes
+F2 - src/cli/commands.rs  # 49749 bytes
+F2 - src/cli/mod.rs  # 18 bytes
+F2 - src/config/mod.rs  # 33113 bytes
+F2 - src/dotfile/backup.rs  # 350 bytes
+F2 - src/dotfile/link.rs  # 833 bytes
+F2 - src/dotfile/list.rs  # 1086 bytes
+F2 - src/dotfile/mod.rs  # 1223 bytes
+F2 - src/dotfile/unlink.rs  # 636 bytes
+F2 - src/scanner/mod.rs  # 792 bytes
+F2 - src/symlink/mod.rs  # 3827 bytes
+F2 - src/utils/mod.rs  # 32 bytes
+F2 - src/utils/path_utils.rs  # 1867 bytes
+F2 - src/utils/ui.rs  # 1347 bytes
+F2 - tests/common/mod.rs  # 3684 bytes
+-----------------------------
+F3 - docs/src/development/command-symmetry-audit.md  # 14981 bytes
+F3 - docs/src/development/project-structure.md  # 1223 bytes
+-----------------------------
+F3 - docs/src/features/overview.md  # 1557 bytes
+-----------------------------
+F3 - docs/src/getting-started/basic-usage.md  # 3762 bytes
+F3 - docs/src/getting-started/installation.md  # 723 bytes
+F3 - docs/src/getting-started/quick-start.md  # 982 bytes
+-----------------------------
+F3 - src/cli/commands/pack.rs  # 42300 bytes
+-----------------------------

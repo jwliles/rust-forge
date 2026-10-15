@@ -17,6 +17,13 @@ remain useful starting points. The current findings below supersede its status
 claims where noted. That document's reference to `fixes.org` now points to the
 reconciliation requests preserved in [ROADMAP.md](ROADMAP.md#forge-fixes).
 
+### Dependency upgrade follow-up
+
+The dependency upgrade addresses B02 by rejecting absolute and parent-traversing
+ZIP entry paths before writing them. Install and restore also reject unsafe
+manifest payload paths from B10. Payload and destination collision detection in
+B10 remains outstanding. The table below preserves the original audit findings.
+
 ### Confirmed outstanding work
 
 “Reproduced” means observed using the built CLI with isolated SQLite/config paths

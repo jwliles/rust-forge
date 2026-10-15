@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Upgrade rusqlite, dirs, toml, and zip; refresh compatible dependency requirements.
+- Require Rust 1.88 and track Cargo.lock for reproducible binary builds.
+- Move assertion libraries to dev dependencies and remove unused dependencies.
+
+### Fixed
+- Reject unsafe ZIP entry paths and manifest payload paths during install and restore.
+
+### Added
+- Regression tests for archive path rejection and compatibility with pre-upgrade packs.
+
 ## [0.5.1] - 2025-10-05
 
 ### Fixed

@@ -505,11 +505,11 @@ fn seal_pack_impl(scope: &str) -> Result<PathBuf> {
 /// Create a ZIP archive from source files using manifest
 fn create_zip_archive(manifest: &PackManifest, archive_path: &Path) -> Result<()> {
     use std::io::Write;
-    use zip::write::FileOptions;
+    use zip::write::SimpleFileOptions;
 
     let file = fs::File::create(archive_path)?;
     let mut zip = zip::ZipWriter::new(file);
-    let options = FileOptions::default()
+    let options = SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated)
         .unix_permissions(0o755);
 
@@ -669,7 +669,7 @@ fn install_pack_impl(
     let mut installed_count = 0;
 
     for pack_file in manifest.files.values() {
-        let source_in_archive = files_dir.join(&pack_file.relative_path);
+        let source_in_archive = archive_payload_path(&files_dir, &pack_file.relative_path)?;
 
         if !source_in_archive.exists() {
             eprintln!("File missing from archive: {}", pack_file.relative_path);
@@ -773,7 +773,7 @@ fn restore_pack_impl(
     let mut restored_count = 0;
 
     for pack_file in manifest.files.values() {
-        let source_in_archive = files_dir.join(&pack_file.relative_path);
+        let source_in_archive = archive_payload_path(&files_dir, &pack_file.relative_path)?;
 
         if !source_in_archive.exists() {
             eprintln!("File missing from archive: {}", pack_file.relative_path);
@@ -936,6 +936,26 @@ fn calculate_restore_target_path(original_path: &str, test: bool) -> Result<Path
     }
 }
 
+fn archive_payload_path(files_dir: &Path, relative_path: &str) -> Result<PathBuf> {
+    use std::path::Component;
+
+    let path = Path::new(relative_path);
+    if relative_path.contains('\0')
+        || relative_path.starts_with('\\')
+        || relative_path.as_bytes().get(1) == Some(&b':')
+        || !path.components().any(|c| matches!(c, Component::Normal(_)))
+        || path.components().any(|c| {
+            matches!(
+                c,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return Err(anyhow!("Unsafe manifest payload path: {}", relative_path));
+    }
+    Ok(files_dir.join(path))
+}
+
 /// Extract ZIP archive to a directory
 fn extract_zip_archive(archive: &Path, target_dir: &Path) -> Result<()> {
     let file = fs::File::open(archive)?;
@@ -943,9 +963,17 @@ fn extract_zip_archive(archive: &Path, target_dir: &Path) -> Result<()> {
 
     for i in 0..zip.len() {
         let mut file = zip.by_index(i)?;
-        let outpath = target_dir.join(file.name());
+        let name = file.name()?.into_owned();
+        // Reject absolute paths explicitly: zip may strip an absolute prefix
+        // when producing an enclosed name instead of rejecting the entry.
+        archive_payload_path(target_dir, &name)
+            .map_err(|_| anyhow!("Unsafe archive entry path: {}", name))?;
+        let enclosed = file
+            .enclosed_name()
+            .ok_or_else(|| anyhow!("Unsafe archive entry path: {}", name))?;
+        let outpath = target_dir.join(enclosed);
 
-        if file.name().ends_with('/') {
+        if file.is_dir() {
             fs::create_dir_all(&outpath)?;
         } else {
             if let Some(parent) = outpath.parent() {
@@ -1342,4 +1370,64 @@ fn explain_pack_impl(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod archive_path_tests {
+    use super::{archive_payload_path, extract_zip_archive};
+    use std::fs;
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+
+    #[test]
+    fn extraction_rejects_paths_outside_temporary_directory() -> anyhow::Result<()> {
+        let temp = tempfile::tempdir()?;
+        let output = temp.path().join("output");
+        fs::create_dir(&output)?;
+        let escaped = temp.path().join("escaped");
+        for name in [
+            "../escaped".to_owned(),
+            escaped.to_string_lossy().into_owned(),
+        ] {
+            let archive = temp.path().join("unsafe.zip");
+            let mut writer = zip::ZipWriter::new(fs::File::create(&archive)?);
+            // The new writer normalizes entry names. Patch both ZIP headers to
+            // model untrusted archives rather than testing the writer's cleanup.
+            let placeholder = "x".repeat(name.len());
+            writer.start_file(&placeholder, SimpleFileOptions::default())?;
+            writer.write_all(b"must not escape")?;
+            writer.finish()?;
+            let mut bytes = fs::read(&archive)?;
+            let mut replacements = 0;
+            for offset in 0..=bytes.len() - placeholder.len() {
+                if &bytes[offset..offset + placeholder.len()] == placeholder.as_bytes() {
+                    bytes[offset..offset + placeholder.len()].copy_from_slice(name.as_bytes());
+                    replacements += 1;
+                }
+            }
+            assert_eq!(replacements, 2);
+            fs::write(&archive, bytes)?;
+
+            let error = extract_zip_archive(&archive, &output).unwrap_err();
+            assert!(error.to_string().contains("Unsafe archive entry path"));
+            assert!(!escaped.exists());
+            assert_eq!(fs::read_dir(&output)?.count(), 0);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn manifest_payloads_must_stay_inside_files_directory() -> anyhow::Result<()> {
+        let temp = tempfile::tempdir()?;
+        let files = temp.path().join("files");
+        for path in ["", ".", "../manifest.toml", "nested/../../outside"] {
+            assert!(archive_payload_path(&files, path).is_err(), "{path}");
+        }
+        assert!(archive_payload_path(&files, &temp.path().to_string_lossy()).is_err());
+        assert_eq!(
+            archive_payload_path(&files, "nested/config")?,
+            files.join("nested/config")
+        );
+        Ok(())
+    }
 }

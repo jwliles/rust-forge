@@ -1,5 +1,9 @@
 # Forge Design
 
+The four major features and their open design work are outlined in [FEATURES.md](FEATURES.md).
+
+The proposed core linking workflow is specified in [LINKING_REFACTOR.md](LINKING_REFACTOR.md).
+
 This document consolidates the Pack-and-Go design notes and the proposed diff feature. The Pack-and-Go notes describe the intended and recorded implementation as of May 2026; the diff feature remains a January 2026 draft, not an implemented command or an approved design.
 
 For command usage, see [MANUAL.md](MANUAL.md). For development plans, see [ROADMAP.md](ROADMAP.md). Recorded bugs are in [BUGS.md](BUGS.md).
