@@ -14,7 +14,7 @@ name = "forge_rs"
 path = "src/lib.rs"
 
 [[bin]]
-name = "forge"  # This will be the binary name
+name = "forge"
 path = "src/main.rs"
 
 [dependencies]
@@ -39,4 +39,4 @@ clap_mangen = "0.2"
 
 [dev-dependencies]
 test-case = "3.2"
-assert_cmd = "2.0"
+assert_cmd = "2.2"

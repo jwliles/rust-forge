@@ -1,0 +1,29 @@
+#+TITLE: Forge Fixes
+#+DATE: <2026-06-26 Fri 19:36>
+#+AUTHOR: Justin Wayne Liles
+
+* Forge fixes
+
+Forge needs several fixes, improvements, and workflow changes.
+
+** Reverse adoption from the Forge-managed folder
+
+Forge currently does not add new files back to the original location. For example, if I add my Espanso files to Forge and later create or edit files inside the Forge-managed folder, Forge will not create corresponding symlinks back into the Espanso directory.
+
+I do not think this should happen automatically by default, but Forge also lacks an explicit option for doing it when requested. The current workaround is to add the file directly to the Espanso directory, then run the normal `forge stage` and `forge link` workflow. That is consistent with Forge’s current source-of-truth model, but it feels unnecessarily ceremonial when the new file already exists inside the Forge-managed directory.
+
+Forge should have a command that checks the original location and creates missing symlinks for files that exist in the Forge-managed directory but not in the original directory.
+
+** Propagating reorganization
+
+Forge also does not propagate reorganization of the Forge-managed folder back to the original folder. This is closely related to reverse adoption.
+
+Renames, moves, and directory restructuring performed inside the Forge-managed folder remain local to that folder. The user then has to repeat the same operations manually in the original folder. This weakens the utility of Forge because the managed folder is not really acting as a usable working location.
+
+This behavior should be available explicitly, but not automatic by default. A setting to enable automatic propagation could be useful, but the safer default should be a manual reconciliation command.
+
+** Reconciliation between original and managed folders
+
+Forge currently does not keep the original folder and Forge-managed folder in sync after the initial staging and linking workflow. Changes made on one side stay there, which allows the two locations to drift. One folder may have more or fewer files, a different directory structure, or files that no longer represent the same intended state.
+
+Forge is meant to keep dotfiles, configuration files, and other managed files in good working order, but it currently lacks a reconciliation model for handling divergence between the original location and the Forge-managed location.

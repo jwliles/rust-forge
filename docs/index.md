@@ -1,42 +1,37 @@
 ---
 date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598162
+date_updated: 2026-05-30
 title: index
-id: 38d961c9-4442-4be5-8051-fb723038bc50
-hash: 234ed458b114ac803044cfa616605e03fccae186574850cf64c5c29048622e9a
 ---
 # Forge
 
-A powerful symlink management tool designed as a modern alternative to GNU Stow.
-
-## Overview
-
-Forge provides comprehensive symlink management using an intuitive workflow metaphor inspired by blacksmithing:
-
-- **Heat**: Stage files for symlinking
-- **Forge**: Create the actual symlinks
-- **Cool**: Remove symlinks and tracking
-
-## Features
-
-- **Profile System**: Manage multiple configurations for the same target location
-- **Multi-Directory Support**: Organize different types of symlinked content (dotfiles, scripts, etc.)
-- **Interactive Mode**: Visual interface for managing symlink operations
-- **SQLite Backend**: Reliable state tracking with transactional safety
-- **Modular Design**: Core functionality with optional feature modules
-
-## Quick Start
+Forge manages symlinked files with an explicit workflow:
 
 ```bash
-# Install from crates.io
-cargo install forge-rs
-
-# Heat (stage) a file for symlinking
-forge heat ~/.config/nvim/init.lua
-
-# Create the symlinks for all heated files
-forge forge
+forge init --name dotfiles
+forge stage ~/.vimrc ~/.bashrc
+forge link
+forge list
 ```
 
-Check out the [Getting Started](getting-started/installation.md) section for more detailed instructions.
+It also creates portable configuration packs:
+
+```bash
+forge start packing my_dotfiles
+forge pack --scope my_dotfiles ~/.vimrc ~/.bashrc
+forge seal --scope my_dotfiles
+forge explain .forge/archives/my_dotfiles-2026-05-30.zip
+```
+
+## Current Features
+
+- Stage, link, unlink, remove, delete, unstage, and purge tracked files.
+- Recursive and depth-limited directory staging.
+- Legacy profile listing and switching.
+- Pack-and-Go archives with BLAKE3 integrity checks.
+- Install, restore, explain, repack, unpack, and check pack workflows.
+- SQLite-backed tracking.
+
+Interactive mode is reserved by `-I` but the TUI is not implemented yet. Transaction safety is planned, not currently guaranteed.
+
+Start with [Installation](getting-started/installation.md). The full mdBook source also includes quick-start and basic-usage guides under `docs/src/getting-started/`.
