@@ -1,9 +1,9 @@
 # Forge "Pack‑and‑Go" Profile Feature Expansion – Detailed Design Document
 
-*Version: Draft 0.4  ·  Last updated: 2025‑06‑21*
+*Version: Current implementation notes  ·  Last updated: 2026-05-30*
 
 > **Preface**  
-> This document reflects extensive design iterations on Forge’s Pack‑and‑Go system — not a speculative idea but a near-final spec for a deliberate, user‑protective workflow. Many choices, such as requiring `start packing` and duplicating files during staging, may feel overly careful at first glance. However, each is the result of testing, edge‑case exploration, and learning from real-world mistakes.  
+> This document records the current Pack-and-Go implementation and the design intent behind it. Forge still requires `start packing` to make pack creation deliberate, but current staging is manifest-based: files are hashed and recorded during `forge pack`, then read from their source locations during `forge seal`.
 >
 > Forge treats configuration like code: we version, we validate, we audit. The manifest approach is inspired by Cargo. The deliberate actions model owes inspiration to Pijul’s patching system. And like any good system, Forge trades convenience for clarity where safety is concerned.  
 >
@@ -19,9 +19,9 @@ For years, advanced users have relied on ad‑hoc **dotfile repos**, fragile **s
 
 - **Intentional actions** → you can’t accidentally create a pack.
 - **Absolute path fidelity** → no fake directory trees.
-- **Reproducibility & auditability** → manifests, hashes, optional GPG.
+- **Reproducibility & auditability** → manifests and BLAKE3 hashes.
 - **User learning** → GUI/CLI parity via Command Assistant.
-- **Transparent tradeoffs** → File duplication for safety, not efficiency.
+- **Transparent tradeoffs** → Manifest-only staging avoids temporary duplication, while `seal` validates that source files have not changed since packing.
 
 ---
 
@@ -30,16 +30,16 @@ For years, advanced users have relied on ad‑hoc **dotfile repos**, fragile **s
 | Term                  | Meaning                                                                           | Notes                                    |
 | --------------------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
 | **Pack**              | A named container of files the user wants to move/export.                         | Think "project" of configs.              |
-| **Scope**             | The identifier of a pack (e.g. `vim_minimal`).                                    | Used in temp paths, manifests, archives. |
+| **Scope**             | The identifier of a pack (for example, `my_dotfiles`).                            | Used in temp paths, manifests, archives. |
 | **Packing**           | *Verb*: Starting a new pack. Must be done with `forge start packing`.             | Prevents accidental creation.            |
 | **pack**              | *Verb*: Add one or more files to an *existing* pack.                              | `forge pack <file>`                      |
-| **Repack**            | Update the staged copy of files (e.g. file modified).                             | Does **not** re‑seal.                    |
-| **Seal**              | Freeze the current pack into a `.zip`. Overwrites previous archive of same scope. |                                          |
-| **Install**           | Unzip + link a sealed pack on another system.                                     |                                          |
-| **Unpack**            | Remove a file from a pack *or* skip it during install.                            |                                          |
+| **Repack**            | Refresh manifest entries and hashes from current source files.                    | Does **not** re-seal.                    |
+| **Seal**              | Validate the manifest and write a timestamped `.zip`.                             | Aborts if source files changed/missing.  |
+| **Install**           | Extract a sealed pack to the current directory, a target directory, or mapped home paths. |                                  |
+| **Restore**           | Extract a sealed pack to the original absolute paths, or use `--test` for current-directory restore. |                         |
+| **Unpack**            | Remove a source path from an active pack manifest.                                |                                          |
 | **Inventory**         | Set of all files Forge currently manages (linked or staged).                      |                                          |
-| **Command Assistant** | GUI panel echoing the equivalent CLI for the last or next action.                 | Teaches the CLI passively.               |
-| **Sign**              | GPG-sign a sealed pack archive to ensure authenticity.                            | Creates `.asc` signature file.           |
-| **Hash**              | Generate/check per-file hashes for integrity validation.                          | Used for changes and comparisons.        |
+| **Dry run**           | Preview a pack, install, or restore operation without writing files.              | `--dry-run` on supported commands.       |
+| **Hash**              | BLAKE3 per-file hash stored in the manifest.                                      | Used by `check`, `seal`, install, restore. |
 
 ...

@@ -505,7 +505,8 @@ fn test_pack_without_starting_fails() {
 
     // Try to pack without starting a pack first
     // Note: Currently the command returns success but prints error to stderr
-    let output = ctx.forge_cmd()
+    let output = ctx
+        .forge_cmd()
         .arg("pack")
         .arg(test_file.path())
         .current_dir(temp.path())
@@ -532,7 +533,8 @@ fn test_seal_without_packing_fails() {
 
     // Try to seal without packing any files
     // Note: Currently the command returns success but prints error to stderr
-    let output = ctx.forge_cmd()
+    let output = ctx
+        .forge_cmd()
         .arg("seal")
         .arg("--scope")
         .arg("empty-pack")
@@ -545,9 +547,15 @@ fn test_seal_without_packing_fails() {
     // Check that there's an error message about the pack being empty or failing
     // The command might succeed even when sealing an empty pack
     assert!(
-        stderr.contains("Failed") || stderr.contains("empty") || stderr.contains("No files") || stderr.contains("does not exist") ||
-        stdout.contains("Sealing") || output.status.success(),
-        "Expected error message or success, got stdout: {}, stderr: {}", stdout, stderr
+        stderr.contains("Failed")
+            || stderr.contains("empty")
+            || stderr.contains("No files")
+            || stderr.contains("does not exist")
+            || stdout.contains("Sealing")
+            || output.status.success(),
+        "Expected error message or success, got stdout: {}, stderr: {}",
+        stdout,
+        stderr
     );
 }
 
@@ -701,7 +709,8 @@ fn test_seal_validation_catches_modified_files() {
     test_file.write_str("modified content").unwrap();
 
     // Try to seal - should fail with validation error
-    let output = ctx.forge_cmd()
+    let output = ctx
+        .forge_cmd()
         .arg("seal")
         .arg("--scope")
         .arg("validation-test")
@@ -711,10 +720,16 @@ fn test_seal_validation_catches_modified_files() {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("modified") || stderr.contains("hash mismatch") || stderr.contains("changed"),
-        "Expected validation error, got: {}", stderr
+        stderr.contains("modified")
+            || stderr.contains("hash mismatch")
+            || stderr.contains("changed"),
+        "Expected validation error, got: {}",
+        stderr
     );
-    assert!(!output.status.success(), "Seal should fail when files are modified");
+    assert!(
+        !output.status.success(),
+        "Seal should fail when files are modified"
+    );
 }
 
 #[test]
@@ -858,11 +873,19 @@ fn test_no_files_directory_created_during_pack() {
         .success();
 
     // Check that files/ subdirectory was NOT created
-    let staging_dir = temp.path().join(".forge").join("tmp").join("pack").join("no-files-dir");
+    let staging_dir = temp
+        .path()
+        .join(".forge")
+        .join("tmp")
+        .join("pack")
+        .join("no-files-dir");
     let files_dir = staging_dir.join("files");
 
     assert!(staging_dir.exists(), "Staging directory should exist");
-    assert!(!files_dir.exists(), "files/ subdirectory should NOT be created during pack");
+    assert!(
+        !files_dir.exists(),
+        "files/ subdirectory should NOT be created during pack"
+    );
 
     // Manifest should exist
     let manifest_path = staging_dir.join("manifest.toml");

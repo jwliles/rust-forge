@@ -1,62 +1,48 @@
 ---
 date_created: 2025-10-03T02-46-38
-date_updated: 2025-10-03T02-46-38
-timestamp: 1759459598161
+date_updated: 2026-05-30
 title: project-structure
-id: 5a8e91ae-30eb-4445-9add-7660e330a1ff
-hash: 9ea6fcded619726f62b59d3eca72ae0f899a2ad1e459855dca3dcec97dd311d1
 ---
 # Project Structure
 
-Forge is organized into a modular structure following Rust conventions.
+Forge is organized as a Rust CLI with reusable modules for configuration, dotfile tracking, symlink operations, and Pack-and-Go archives.
 
-## Directory Structure
-
-```
+```text
 src/
-├── main.rs             # Entry point and CLI definition
-├── cli/                # CLI handling
-│   ├── mod.rs          # CLI module exports
-│   └── commands.rs     # Command implementations
-├── config/             # Configuration handling
-│   └── mod.rs          # Config struct and DB connection
-├── dotfile/            # Core dotfile operations
-│   ├── mod.rs          # DotFile struct definition
-│   ├── backup.rs       # Backup functionality
-│   ├── link.rs         # Linking functionality 
-│   ├── list.rs         # Listing dotfiles
-│   └── unlink.rs       # Unlinking functionality
-├── scanner/            # Directory scanning
-│   └── mod.rs          # Scanning functionality
-├── symlink/            # Symlink operations
-│   └── mod.rs          # Cross-platform symlink creation
-└── utils/              # Utility functions
-    ├── mod.rs          # Utils module exports
-    └── path_utils.rs   # Path manipulation utilities
+├── main.rs                    # clap CLI definition and command dispatch
+├── lib.rs                     # library exports for tests
+├── cli/
+│   ├── mod.rs
+│   ├── commands.rs            # core command implementations
+│   └── commands/
+│       └── pack.rs            # Pack-and-Go implementation
+├── config/
+│   └── mod.rs                 # SQLite-backed configuration and state
+├── dotfile/
+│   ├── mod.rs                 # DotFile model
+│   ├── backup.rs
+│   ├── link.rs
+│   ├── list.rs
+│   └── unlink.rs
+├── scanner/
+│   └── mod.rs
+├── symlink/
+│   └── mod.rs
+└── utils/
+    ├── mod.rs
+    ├── path_utils.rs
+    └── ui.rs
 ```
 
-## Module Overview
+## Documentation Files
 
-### CLI Module
+- `README.md`: primary GitHub/crates.io overview and command reference.
+- `MANUAL.md`: Markdown manual with examples and flag explanations.
+- `forge.1`: roff man page installed or packaged with the binary.
+- `forge.md`: Markdown copy of the primary reference.
+- `docs/index.md`: MkDocs-style landing page.
+- `docs/src/`: mdBook source.
 
-Handles command-line interface parsing and dispatching commands to their respective handlers.
+## Command Surface
 
-### Config Module
-
-Manages application configuration including database connections and user preferences.
-
-### Dotfile Module
-
-Provides core functionality for managing dotfiles, including backup, linking, and unlinking operations.
-
-### Scanner Module
-
-Implements directory scanning to find and process files for symlinking.
-
-### Symlink Module
-
-Contains cross-platform abstractions for symlink creation and management.
-
-### Utils Module
-
-Provides various utility functions used throughout the application.
+The authoritative CLI definitions live in `src/main.rs`. When commands or flags change, update the command reference in `README.md`, `MANUAL.md`, `forge.md`, `forge.1`, and the relevant `docs/src/` pages.
